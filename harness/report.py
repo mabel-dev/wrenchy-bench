@@ -35,15 +35,8 @@ SUITE_ORDER = {line.id: index for index, line in enumerate(SUITE)}
 
 
 def line_id(record: dict) -> str:
-    """Reconstruct the suite line a record belongs to."""
-    for line in SUITE:
-        if (
-            line.benchmark == record["benchmark"]
-            and line.data_format == record["data_format"]
-            and line.scale_factor == record["scale_factor"]
-        ):
-            return line.id
-    return f"{record['benchmark']}_{record['data_format']}"
+    """The suite line a record belongs to."""
+    return record["line"]
 
 
 def minimums(records: list[dict]) -> dict[str, dict]:

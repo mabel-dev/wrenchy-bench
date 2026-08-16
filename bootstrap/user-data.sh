@@ -103,11 +103,18 @@ sync_corpus() {
     aws s3 sync --only-show-errors "${CORPUS_PREFIX}/${name}/" "${dest}/"
 }
 
+# Six Skene mirrors and one parquet corpus — ClickBench-parquet is a suite line
+# in its own right. JOB and H2O are Skene too: upstream ships rows, not files,
+# so the format was always this harness's choice and is made once, everywhere.
+#
+# Synced from S3 rather than from the canonical GCS copy: GCS to EC2 is
+# internet egress at ~$0.12/GB (~$9.60 a week, against ~$3 for the compute),
+# where S3 in-region is free. Same bytes, same manifest.
 sync_corpus tpch_1_skene   "${WORK}/opteryx-core/testdata/tpch_1_skene"
 sync_corpus tpch_10_skene  "${WORK}/opteryx-core/testdata/tpch_10_skene"
 sync_corpus tpch_100_skene "${WORK}/opteryx-core/testdata/tpch_100_skene"
-sync_corpus job            "${WORK}/opteryx-core/testdata/job"
-sync_corpus h2o            "${WORK}/opteryx-core/testdata/h2o"
+sync_corpus job_skene      "${WORK}/opteryx-core/testdata/job_skene"
+sync_corpus h2o_skene      "${WORK}/opteryx-core/testdata/h2o_skene"
 sync_corpus hits_rugo_262k "${WORK}/opteryx-core/scratch/hits_rugo_262k"
 sync_corpus hits_skene     "${WORK}/opteryx-core/scratch/hits_skene"
 

@@ -1,15 +1,17 @@
-"""Drive the seven lines, normalise the output, and write the run bundle.
+"""Drive the seven lines and write the run bundle.
 
-Runs on the benchmark box, from inside the opteryx-core checkout. Everything it
-produces lands under --out:
+Runs on the benchmark box. Each line is a separate `bench_runner.py` process —
+a fresh interpreter and a fresh allocator arena per line, so one line's
+fragmentation cannot be charged to the next. Lines run strictly serially: two
+benchmarks sharing 16 vCPU measure each other.
+
+Everything it produces lands under --out:
 
     manifest.json     run-level provenance -> opteryx.telemetry.benchmark_runs
     results.jsonl     one record per query per iteration -> opteryx.telemetry.benchmarks
-    raw/              each runner's native CSV/JSON, verbatim
-    console/          per-line stdout+stderr
+    raw/              each line's own JSONL, as the driver wrote it
+    console/          per-line stderr
     STATUS            ok | suspect | failed, written last
-
-Lines run strictly serially. Two benchmarks sharing 16 vCPU measure each other.
 """
 
 from __future__ import annotations
@@ -18,21 +20,22 @@ import argparse
 import datetime
 import json
 import os
-import shutil
 import subprocess
 import sys
-import time
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from harness import adapters, manifest, probe  # noqa: E402
+from harness import manifest, probe  # noqa: E402
 from harness.config import (  # noqa: E402
     CALIBRATION_LINE,
     CALIBRATION_TOLERANCE,
     CORPORA,
     SUITE,
     SUITE_BY_ID,
+    UNSTABLE_SPREAD,
 )
+
+HARNESS = os.path.dirname(os.path.abspath(__file__))
 
 
 def _sh(argv: list[str], cwd: str | None = None) -> str:
@@ -78,33 +81,27 @@ def drop_page_cache() -> bool:
 
 
 def engine_identity(checkout: str, python: str) -> dict:
-    version = _sh(
-        [
-            python,
-            "-c",
-            "import opteryx; print(opteryx.__version__); print(opteryx.__build__)",
-        ],
+    identity = _sh(
+        [python, "-c", "import opteryx; print(opteryx.__version__); print(opteryx.__build__)"],
         cwd=checkout,
     ).splitlines()
-    if len(version) != 2:
+    if len(identity) != 2:
         raise RuntimeError(
-            f"could not read opteryx version/build from the checkout at {checkout} — "
-            "is the engine compiled?"
+            f"could not read opteryx version/build from {checkout} — is the engine compiled?"
         )
-    dirty = _sh(["git", "status", "--porcelain"], cwd=checkout)
     return {
-        "engine_version": version[0],
-        "engine_build": int(version[1]),
+        "engine_version": identity[0],
+        "engine_build": int(identity[1]),
         "git_sha": _sh(["git", "rev-parse", "HEAD"], cwd=checkout),
-        "git_dirty": bool(dirty),
+        "git_dirty": bool(_sh(["git", "status", "--porcelain"], cwd=checkout)),
     }
 
 
-def verify_corpora(checkout: str) -> dict:
-    """Verify every corpus the suite will read, before any of it runs."""
+def verify_corpora(checkout: str, lines: list) -> dict:
+    """Verify every corpus the run will read, before any of it runs."""
     hashes = {}
-    for name, corpus in CORPORA.items():
-        root = os.path.join(checkout, corpus.dest)
+    for name in sorted({line.corpus for line in lines}):
+        root = os.path.join(checkout, CORPORA[name].dest)
         if not os.path.isdir(root):
             raise FileNotFoundError(
                 f"corpus {name} is missing at {root}. The suite never generates "
@@ -114,68 +111,92 @@ def verify_corpora(checkout: str) -> dict:
     return hashes
 
 
+def flag_unstable(records: list[dict]) -> None:
+    """Mark queries whose spread across iterations exceeds the threshold.
+
+    An unstable query's minimum is not a signal: the machine moved under it, so
+    a change measured against it is measuring the machine.
+    """
+    by_query: dict[str, list[dict]] = {}
+    for record in records:
+        by_query.setdefault(record["query"], []).append(record)
+
+    for rows in by_query.values():
+        times = [r["duration_ms"] for r in rows if r["status"] == "ok" and r["duration_ms"]]
+        if len(times) < 2:
+            continue
+        lowest = min(times)
+        if lowest > 0 and (max(times) - lowest) / lowest > UNSTABLE_SPREAD:
+            for row in rows:
+                if row["status"] == "ok":
+                    row["status"] = "unstable"
+
+
 def run_line(line, checkout: str, out_dir: str, env: dict, run: dict, python: str):
-    """Run one line as a child process and normalise what it wrote."""
+    """Run one line in its own process and read back what it wrote."""
     raw_dir = os.path.join(out_dir, "raw")
     console_dir = os.path.join(out_dir, "console")
     os.makedirs(raw_dir, exist_ok=True)
     os.makedirs(console_dir, exist_ok=True)
 
-    argv = [python, *line.argv]
-    if line.json_out:
-        argv += ["--json", os.path.join(raw_dir, f"{line.id}.json")]
+    jsonl = os.path.join(raw_dir, f"{line.id}.jsonl")
+    argv = [
+        python,
+        os.path.join(HARNESS, "bench_runner.py"),
+        "--line", line.id,
+        "--run", json.dumps(run),
+        "--out", jsonl,
+    ]
 
     cache_dropped = drop_page_cache()
-    started_after = time.time()
-
-    console_path = os.path.join(console_dir, f"{line.id}.log")
     print(f"  ▸ {line.label}", flush=True)
-    with open(console_path, "w") as console:
+
+    with open(os.path.join(console_dir, f"{line.id}.log"), "w") as console:
         code, reading, wall_ms = probe.probe_child(
             argv, cwd=checkout, env=env, stdout=console, stderr=subprocess.STDOUT
         )
 
-    line_result = {
+    result = {
         "line": line.id,
         "exit_code": code,
         "wall_ms": wall_ms,
         "page_cache_dropped": cache_dropped,
-        **reading.as_dict(),
-        "cpu_efficiency": (reading.cpu_ms / wall_ms) if reading.cpu_ms and wall_ms else None,
+        "process_peak_rss_bytes": reading.peak_rss_bytes,
     }
 
+    records: list[dict] = []
+    if os.path.exists(jsonl):
+        with open(jsonl) as handle:
+            records = [json.loads(entry) for entry in handle if entry.strip()]
+    flag_unstable(records)
+
     if code != 0:
-        # A non-zero exit is reported, not raised: the remaining lines still
-        # carry information, and a partial run beats no run.
-        line_result["error"] = f"runner exited {code}; see console/{line.id}.log"
+        # Reported, not raised: a partial run beats no run, and the remaining
+        # lines still carry information.
+        result["error"] = f"driver exited {code}; see console/{line.id}.log"
         print(f"    ✗ exit {code} — continuing with the remaining lines", flush=True)
-        return [], line_result
 
-    output_path = adapters.resolve_output_path(line, raw_dir, started_after)
-    if not line.json_out:
-        shutil.copy2(output_path, os.path.join(raw_dir, f"{line.id}.csv"))
+    result["record_count"] = len(records)
+    result["timeout_count"] = sum(1 for r in records if r["status"] == "timeout")
+    result["error_count"] = sum(1 for r in records if r["status"] == "error")
+    result["unstable_count"] = sum(1 for r in records if r["status"] == "unstable")
 
-    records = adapters.read_line_output(line, run, output_path)
-    line_result["record_count"] = len(records)
-    line_result["timeout_count"] = sum(1 for r in records if r["status"] == "timeout")
-    line_result["error_count"] = sum(1 for r in records if r["status"] == "error")
+    peak = reading.peak_rss_bytes or 0
     print(
-        f"    {len(records)} records  {wall_ms / 1000:.1f}s  "
-        f"peak {(reading.peak_rss_bytes or 0) / 1e9:.1f}GB  "
-        f"{line_result['timeout_count']} timeouts",
+        f"    {len(records)} records  {wall_ms / 1000:.1f}s  peak {peak / 1e9:.1f}GB  "
+        f"{result['timeout_count']} timeouts  {result['error_count']} errors",
         flush=True,
     )
-    return records, line_result
+    return records, result
 
 
 def calibration_total(records: list[dict]) -> float:
-    """Sum of per-query minimums for the bookend line."""
+    """Sum of per-query minimums over the queries that ran clean."""
     best: dict[str, float] = {}
     for record in records:
         if record["status"] != "ok" or not record["duration_ms"]:
             continue
-        query = record["query"]
-        best[query] = min(best.get(query, float("inf")), record["duration_ms"])
+        best[record["query"]] = min(best.get(record["query"], float("inf")), record["duration_ms"])
     return sum(best.values())
 
 
@@ -185,16 +206,8 @@ def main() -> int:
     parser.add_argument("--out", required=True, help="directory to write the run bundle into")
     parser.add_argument("--python", default=sys.executable)
     parser.add_argument("--run-id", default=None, help="defaults to the UTC start time")
-    parser.add_argument(
-        "--only",
-        default=None,
-        help="comma-separated line ids, for a partial run (never used weekly)",
-    )
-    parser.add_argument(
-        "--skip-calibration",
-        action="store_true",
-        help="skip the closing bookend (local runs only)",
-    )
+    parser.add_argument("--only", default=None, help="comma-separated line ids, for a partial run")
+    parser.add_argument("--skip-calibration", action="store_true")
     args = parser.parse_args()
 
     checkout = os.path.abspath(args.checkout)
@@ -203,31 +216,20 @@ def main() -> int:
 
     started = datetime.datetime.now(datetime.timezone.utc)
     run_id = args.run_id or started.strftime("%Y-%m-%dT%H:%MZ")
+    print(f"wrenchy bench · run {run_id}\n", flush=True)
 
-    print(f"opteryx weekly bench · run {run_id}\n", flush=True)
+    lines = [SUITE_BY_ID[i] for i in args.only.split(",")] if args.only else SUITE
 
     identity = engine_identity(checkout, args.python)
     preload = resolve_preload(checkout, args.python)
-    corpus_hashes = verify_corpora(checkout)
+    corpus_hashes = verify_corpora(checkout, lines)
     facts = probe.host_facts()
 
-    run = {
-        "run_id": run_id,
-        "run_date": started.isoformat(),
-        **identity,
-    }
+    run = {"run_id": run_id, "run_date": started.isoformat(), **identity}
 
-    # Child environment only — every value must be a string.
     env = dict(os.environ)
-    env.update(
-        LD_PRELOAD=preload,
-        MIMALLOC_PURGE_DELAY="100",
-    )
+    env.update(LD_PRELOAD=preload, MIMALLOC_PURGE_DELAY="100")
     env.pop("OPTERYX_DEBUG", None)
-
-    lines = SUITE
-    if args.only:
-        lines = [SUITE_BY_ID[i] for i in args.only.split(",")]
 
     all_records: list[dict] = []
     line_results: list[dict] = []
@@ -237,7 +239,7 @@ def main() -> int:
         all_records.extend(records)
         line_results.append(result)
 
-    # Closing bookend. If the two SF1 totals disagree, the machine moved under
+    # Closing bookend. If the two SF1 totals disagree the machine moved under
     # the run: every number in it is suspect, so it is kept and reported but
     # excluded from trend baselines.
     calibration = {"open_ms": None, "close_ms": None, "drift": None}
@@ -252,9 +254,9 @@ def main() -> int:
         )
         calibration["close_ms"] = calibration_total(closing)
         if calibration["close_ms"]:
-            calibration["drift"] = abs(
-                calibration["close_ms"] - calibration["open_ms"]
-            ) / calibration["open_ms"]
+            calibration["drift"] = (
+                abs(calibration["close_ms"] - calibration["open_ms"]) / calibration["open_ms"]
+            )
 
     failed = any(r["exit_code"] != 0 for r in line_results)
     drifted = (calibration["drift"] or 0) > CALIBRATION_TOLERANCE
@@ -281,8 +283,8 @@ def main() -> int:
     with open(os.path.join(out_dir, "manifest.json"), "w") as handle:
         json.dump(run_manifest, handle, indent=2, sort_keys=True, default=str)
 
-    # STATUS last: it is what the CloudWatch alarm watches, so it must not
-    # appear until the bundle beside it is complete.
+    # STATUS last: it is what the Action polls and what the alarm watches, so it
+    # must not appear before the bundle beside it is complete.
     with open(os.path.join(out_dir, "STATUS"), "w") as handle:
         handle.write(status + "\n")
 

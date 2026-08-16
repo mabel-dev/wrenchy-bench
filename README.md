@@ -6,22 +6,25 @@ Seven workloads, one `c8g.4xlarge`, once a week. Corpora are built once and
 stored, never regenerated. Results land in `opteryx.telemetry.benchmarks` and
 on a [GitHub Pages site](https://mabel-dev.github.io/wrenchy-bench/).
 
-| Line | Format | Corpus | Size |
-|---|---|---|---|
-| TPC-H SF1 | Skene · lz4 | `tpch_1_skene` | 0.3 GB |
-| TPC-H SF10 | Skene · lz4 | `tpch_10_skene` | 4.0 GB |
-| TPC-H SF100 | Skene · lz4 | `tpch_100_skene` | 40 GB |
-| JOB | Parquet · snappy | `job` | 1.8 GB |
-| H2O (medium) | Parquet · zstd | `h2o` | 5.0 GB |
-| ClickBench partitioned | Parquet · zstd | `hits_rugo_262k` | 8.1 GB |
-| ClickBench | Skene · lz4 | `hits_skene` | 14 GB |
+| Line | Format | Corpus | Queries | Iterations | Size |
+|---|---|---|--:|--:|--:|
+| TPC-H SF1 | Skene · lz4 | `tpch_1_skene` | 22 | 5 | 0.3 GB |
+| TPC-H SF10 | Skene · lz4 | `tpch_10_skene` | 22 | 5 | 4.0 GB |
+| TPC-H SF100 | Skene · lz4 | `tpch_100_skene` | 22 | 3 | 40 GB |
+| JOB | Skene · lz4 | `job_skene` | 113 | 3 | 2.5 GB |
+| H2O (medium) | Skene · lz4 | `h2o_skene` | 15 | 3 | 7.0 GB |
+| ClickBench partitioned | Parquet · zstd | `hits_rugo_262k` | 43 | 5 | 8.1 GB |
+| ClickBench | Skene · lz4 | `hits_skene` | 43 | 5 | 14 GB |
 
-≈ 4–5 hours, ≈ $3 a run.
+271 queries, ≈ 4 hours, ≈ $3 a run. Stock CPython 3.14 — execution is native
+and already runs with the GIL released, so the free-threaded build bought
+nothing.
 
 > **JOB and H2O do not stipulate a storage format.** Neither upstream benchmark
 > ships one — both distribute *rows* (CSV from CWI, and `datagen.R`), not files.
-> Parquet is this harness's choice, so it is named explicitly rather than left
-> implicit. Skene mirrors for both are a phase-two addition.
+> The format was always this harness's choice, so it is made once and made the
+> same everywhere: Skene, like every other line. ClickBench-parquet stays
+> parquet because it *is* the parquet line.
 
 ## How a run happens
 
@@ -51,21 +54,34 @@ up.
 ## Layout
 
 ```
+queries/            271 vendored .sql files — a benchmark repo owns its queries
+  tpch/ job/ h2o/ clickbench/
 harness/
-  config.py     the seven lines, their corpora, and the thresholds
-  run_suite.py  drives the lines on the box, writes the run bundle
-  probe.py      peak RSS / CPU / block I/O — stdlib only, vendorable into opteryx-core
-  adapters.py   three CSV shapes + one JSON payload -> one record shape
-  manifest.py   corpus manifests: build at publish, verify before every run
-  schema.py     the opteryx.telemetry.* table contracts
-  report.py     regression detection and the site data
-  publish.py    Parquet via rugo, committed through the upload service
-corpus/publish.py   build a corpus manifest and push it to S3
-infra/              terraform: buckets, OIDC role, instance profile, alarm
-bootstrap/          what the instance runs
-site/               the static results browser
-docs/PREFLIGHT.md   the opteryx-core changes this depends on
+  config.py       the seven lines, their corpora, iterations and thresholds
+  bench_runner.py the query driver: loads, binds, runs, measures. One per line
+  run_suite.py    orchestrates the lines, writes the run bundle
+  probe.py        peak RSS / CPU / block I/O — stdlib only
+  manifest.py     corpus manifests: build at publish, verify before every run
+  schema.py       the opteryx.telemetry.* table contracts
+  report.py       regression detection and the site data
+  publish.py      Parquet via rugo, committed through the upload service
+corpus/
+  convert.py      build the Skene mirrors from parquet, once
+  publish.py      manifest, push to GCS, mirror to S3
+infra/            terraform + the launcher and its kill-switch
+bootstrap/        what the instance runs
+site/             the static results browser
+docs/PREFLIGHT.md what this still needs from opteryx-core
 ```
+
+### Why its own driver
+
+`opteryx-core`'s four `tests/performance/*/runner.py` are the record of how the
+historical numbers were produced and are left alone. They are also four
+drivers with four output shapes, three of which record no result column count
+and none of which record resource or engine telemetry. Owning the driver means
+one protocol across all seven lines and every column in the results table
+populated from the first run.
 
 ## Comparability
 
@@ -90,6 +106,23 @@ A weekly benchmark's only job is to make week *n* comparable to week *n−1*.
   run. A status transition `ok → error`/`timeout` is reported immediately and
   needs no statistics.
 
+## Corpora
+
+Canonical in **GCS** — `gs://opteryx_data/benchmarks/<version>/<corpus>/` — so
+a benchmark dataset is a dataset the engine can reference, not a private
+fixture. Mirrored to **S3** in the run's region, which is what the box reads.
+
+That mirror is not redundancy. GCS to EC2 is internet egress at ~$0.12/GB:
+~80 GB a week is **~$9.60 a run**, against ~$3 for the compute that consumes
+it. S3 to EC2 in-region is free, and 80 GB of S3 Standard is ~$1.85/month. Both
+copies are written from the same local tree in the same publish run and verified
+by the same manifest, so they cannot drift.
+
+```bash
+python corpus/convert.py --checkout ../opteryx-core --all      # build the mirrors
+python corpus/publish.py --source ../opteryx-core/testdata/job_skene --name job_skene
+```
+
 ## Local use
 
 ```bash
@@ -107,14 +140,23 @@ cd infra && terraform init && terraform apply \
 ```
 
 Then set `AWS_BENCH_ROLE_ARN` (from the terraform output), `OPTERYX_CLIENT_ID`
-and `OPTERYX_CLIENT_SECRET` as repository secrets, publish each corpus with
-`corpus/publish.py`, and land the changes in [docs/PREFLIGHT.md](docs/PREFLIGHT.md).
+and `OPTERYX_CLIENT_SECRET` as repository secrets, build and publish the corpora,
+and read [docs/PREFLIGHT.md](docs/PREFLIGHT.md).
+
+### Runaway protection
+
+Three layers, because each has a blind spot the next covers: `shutdown -h +420`
+armed as the first command in user-data; the collect job's `always()` terminate
+step; and an 8-hour CloudWatch alarm carrying the native
+`arn:aws:automate:<region>:ec2:terminate` action, armed per-instance at launch.
+The third needs no scheduler and no Lambda, and is the one that still works when
+the workflow run itself is cancelled.
 
 ## History
 
 This repository previously held a 2024-era correctness harness comparing
 Opteryx to MySQL/Postgres/DuckDB. It targeted the pre-1.0 layout (`orso`, a
 sibling `../../opteryx` checkout) and no longer ran. It is preserved at tag
-`v0-legacy` rather than deleted; its correctness-comparison idea is worth
-revisiting, since ClickBench still checks no result shapes at all
-(PREFLIGHT §5).
+`v0-legacy` rather than deleted. Its correctness-comparison idea is worth
+revisiting: this suite records `row_count` and `column_count` on every query,
+which catches a changed answer, but nothing here checks the answer is *right*.

@@ -176,6 +176,13 @@ resource "aws_iam_role_policy" "actions" {
         Resource = aws_iam_role.instance.arn
       },
       {
+        # The per-instance 8h kill-switch. Scoped to this project's alarm name
+        # so the workflow cannot touch any other alarm in the account.
+        Effect   = "Allow"
+        Action   = ["cloudwatch:PutMetricAlarm", "cloudwatch:DeleteAlarms"]
+        Resource = "arn:aws:cloudwatch:*:*:alarm:opteryx-bench-killswitch-*"
+      },
+      {
         # Terminate only what this project launched. A bug in the workflow must
         # not be able to reach anything else in the account.
         Effect   = "Allow"
@@ -246,21 +253,7 @@ resource "aws_sns_topic" "alerts" {
   tags = local.tags
 }
 
-resource "aws_cloudwatch_metric_alarm" "runaway" {
-  alarm_name          = "${local.name}-runaway-instance"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 1
-  threshold           = 0
-  period              = 3600
-  statistic           = "Maximum"
-  namespace           = "AWS/EC2"
-  metric_name         = "CPUUtilization"
-  treat_missing_data  = "notBreaching"
-  alarm_description   = "A wrenchy-bench instance is still running 9h after the weekly window opened"
-  alarm_actions       = [aws_sns_topic.alerts.arn]
-  tags                = local.tags
-
-  dimensions = {
-    InstanceId = "*"
-  }
-}
+# The 8h kill-switch is created per-instance at launch (infra/launch.sh) rather
+# than declared here: a static alarm cannot carry an InstanceId dimension for an
+# instance that does not exist yet, and a wildcard dimension matches nothing.
+# This topic remains for the collect job's failure notifications.

@@ -120,10 +120,14 @@ jobs:
             --body-file bundle/REPORT.md \
             --label benchmark
 
-      - name: Terminate the instance if it is still alive
-        # The instance self-terminates and has its own watchdog; this is the
-        # backstop for the case where it died before reaching either.
+      - name: Terminate the instance and disarm the kill-switch
+        # The instance self-terminates and carries its own 7h watchdog; this is
+        # the backstop for the case where it died before reaching either. The
+        # 8h CloudWatch kill-switch armed at launch stays as the last resort for
+        # when this job itself does not run, so it is only removed here.
         if: always()
         run: |
-          aws ec2 terminate-instances \
-            --instance-ids "${{ needs.launch.outputs.instance_id }}" 2>/dev/null || true
+          ID="${{ needs.launch.outputs.instance_id }}"
+          aws ec2 terminate-instances --instance-ids "$ID" >/dev/null 2>&1 || true
+          aws cloudwatch delete-alarms \
+            --alarm-names "opteryx-bench-killswitch-$ID" 2>/dev/null || true
