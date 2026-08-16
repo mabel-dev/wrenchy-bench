@@ -36,7 +36,7 @@ SOURCES = {
     "tpch_100_skene": "testdata/tpch_100",
     "job_skene": "testdata/job",
     "h2o_skene": "testdata/h2o/medium",
-    "hits_skene": "scratch/hits_rugo_262k",
+    "hits_skene": "scratch/hits_partitioned",
 }
 
 

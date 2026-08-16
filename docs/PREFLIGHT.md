@@ -7,7 +7,7 @@ blocked the first run are simply not in the path any more:
 
 | Was blocking | Now |
 |---|---|
-| `VARIANT_DATASETS[""]` resolves the ClickBench *parquet* line to the skene mirror | We resolve datasets ourselves; the two ClickBench lines are asserted to bind to different relations |
+| `VARIANT_DATASETS[""]` resolves the ClickBench *parquet* line to the skene mirror | We resolve datasets ourselves; the two ClickBench lines bind to different relations, and the parquet one is the canonical upstream corpus rather than a local rewrite |
 | JOB's 113 × 2 × 300 s worst case | We own the loop: 3 iterations, 120 s, and no second attempt after a timeout |
 | Three of four runners record no result `column_count` | Every line records `row_count` and `column_count` |
 | No resource or engine telemetry anywhere | `Probe` + `Session.telemetry` on every query |

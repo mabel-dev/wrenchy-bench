@@ -117,7 +117,7 @@ sync_corpus tpch_10_skene  "${WORK}/opteryx-core/testdata/tpch_10_skene"
 sync_corpus tpch_100_skene "${WORK}/opteryx-core/testdata/tpch_100_skene"
 sync_corpus job_skene      "${WORK}/opteryx-core/testdata/job_skene"
 sync_corpus h2o_skene      "${WORK}/opteryx-core/testdata/h2o_skene"
-sync_corpus hits_rugo_262k "${WORK}/opteryx-core/scratch/hits_rugo_262k"
+sync_corpus hits_partitioned "${WORK}/opteryx-core/scratch/hits_partitioned"
 sync_corpus hits_skene     "${WORK}/opteryx-core/scratch/hits_skene"
 
 # ---------------------------------------------------------------------------

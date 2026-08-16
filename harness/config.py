@@ -86,7 +86,17 @@ CORPORA = {
         Corpus("h2o_skene", "testdata/h2o_skene", "lz4", 8_700_000_000, tables=5),
         # ClickBench is a single wide table, so its files sit at the top level
         # rather than under per-table directories.
-        Corpus("hits_rugo_262k", "scratch/hits_rugo_262k", "zstd", 8_100_000_000, tables=0),
+        #
+        # THE CANONICAL UPSTREAM FILES, downloaded from
+        # datasets.clickhouse.com/hits_compatible/athena_partitioned/ — the same
+        # 100 objects every published ClickBench "Parquet (partitioned)" number
+        # is measured against. It replaced `hits_rugo_262k`, which was the same
+        # rows rewritten through rugo's own writer at 262,144 rows per row
+        # group. That rewrite made the corpus internally consistent with our
+        # writer policy and made the number incomparable with everyone else's,
+        # which is the opposite of what this line is for: it exists to sit
+        # beside DuckDB, ClickHouse and DataFusion on the same data.
+        Corpus("hits_partitioned", "scratch/hits_partitioned", "zstd", 14_800_000_000, tables=0),
         Corpus("hits_skene", "scratch/hits_skene", "lz4", 15_300_000_000, tables=0),
     )
 }
@@ -184,12 +194,12 @@ SUITE: list[Line] = [
     ),
     Line(
         id="clickbench_parquet",
-        label="ClickBench · Parquet partitioned",
+        label="ClickBench · Parquet partitioned (canonical)",
         benchmark="clickbench",
         scale_factor=None,
         data_format="parquet",
-        corpus="hits_rugo_262k",
-        relation="scratch.hits_rugo_262k",
+        corpus="hits_partitioned",
+        relation="scratch.hits_partitioned",
         iterations=5,
         timeout_s=300,
     ),
