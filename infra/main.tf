@@ -332,6 +332,15 @@ resource "aws_iam_role_policy" "launcher" {
         Resource = "arn:aws:cloudwatch:*:*:alarm:opteryx-bench-killswitch-*"
       },
       {
+        # An alarm carrying an EC2 action needs the CloudWatch Events
+        # service-linked role, which AWS creates on first use — so the very
+        # first PutMetricAlarm in an account fails without this, and only that
+        # one. Scoped to the single role it may create.
+        Effect   = "Allow"
+        Action   = "iam:CreateServiceLinkedRole"
+        Resource = "arn:aws:iam::*:role/aws-service-role/events.amazonaws.com/AWSServiceRoleForCloudWatchEvents"
+      },
+      {
         Effect   = "Allow"
         Action   = "sns:Publish"
         Resource = aws_sns_topic.alerts.arn

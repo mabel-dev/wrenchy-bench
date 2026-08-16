@@ -153,7 +153,28 @@ def handler(event, context):
         raise
 
     instance_id = response["Instances"][0]["InstanceId"]
-    _arm_killswitch(instance_id)
 
-    print(json.dumps({"run_id": run_id, "instance_id": instance_id}))
-    return {"run_id": run_id, "instance_id": instance_id}
+    # BEST EFFORT, and deliberately not fatal. The instance is already running
+    # by this point: raising here loses the run id, leaves an unprotected box
+    # nobody is tracking, and reports a failure for a launch that succeeded.
+    # An unarmed kill-switch is worth an alert, not a lost run — the instance
+    # still carries its own 7h `shutdown -h +420`.
+    try:
+        _arm_killswitch(instance_id)
+        armed = True
+    except Exception as exception:  # noqa: BLE001
+        armed = False
+        sns.publish(
+            TopicArn=ALERTS_TOPIC,
+            Subject=f"wrenchy-bench: kill-switch NOT armed for {instance_id}",
+            Message=(
+                f"{run_id} is running on {instance_id} but its 8h kill-switch "
+                f"could not be created: {type(exception).__name__}: {exception}\n\n"
+                "The instance still has its own 7h shutdown. Arm the alarm by hand "
+                "if that is not enough."
+            ),
+        )
+
+    result = {"run_id": run_id, "instance_id": instance_id, "killswitch_armed": armed}
+    print(json.dumps(result))
+    return result

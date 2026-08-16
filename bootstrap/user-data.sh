@@ -50,6 +50,42 @@ on_error() {
 }
 trap on_error ERR
 
+# ---------------------------------------------------------------------------
+# Every external fetch below goes through this rather than running bare.
+#
+# What actually killed the first attempt at this run: `curl -fsSL
+# https://astral.sh/uv/install.sh | sh` hung for 8+ minutes at ~0% CPU and
+# near-zero network. Traced it — the installer script fetches ITSELF fine,
+# prints its "downloading uv ..." progress line, and only THEN calls the real
+# download: a bare `curl -sSfL "$1" -o "$2"` with NO timeout flags of any
+# kind, buried inside a third-party script we do not control. A stalled
+# TCP/TLS handshake there — not a slow transfer, a connection that never
+# completes — blocks forever: invisible to `set -e` (nothing has failed),
+# invisible to the ERR trap (nothing has errored), and invisible to the log
+# until the 7h watchdog eventually reaps the box having done nothing for most
+# of the night.
+#
+# `timeout --signal=KILL` bounds the WALL TIME of the whole command, so it
+# does not matter whether the hang is inside our own curl or inside someone
+# else's — three attempts with a short backoff, then a hard failure that DOES
+# trip the ERR trap normally, because by the time this is used for anything
+# but the aws cli itself, aws is already installed and can report it.
+retry_with_timeout() {
+    local desc="$1" secs="$2"
+    shift 2
+    local attempt
+    for attempt in 1 2 3; do
+        echo "--- ${desc} (attempt ${attempt}/3, ${secs}s bound)"
+        if timeout --signal=KILL "${secs}" "$@"; then
+            return 0
+        fi
+        echo "    ${desc} attempt ${attempt} failed or timed out"
+        [[ ${attempt} -lt 3 ]] && sleep $((attempt * 5))
+    done
+    echo "FATAL: ${desc} failed after 3 attempts"
+    return 1
+}
+
 echo "=== weekly bench ${RUN_ID} · engine ${ENGINE_VERSION} · harness ${HARNESS_REF}"
 mkdir -p "${WORK}"
 
@@ -69,7 +105,8 @@ apt-get install -y -qq git curl unzip
 # bundle, no log, and a box idling until the 7h watchdog. Installed FIRST, and
 # asserted, so a failure here is loud and immediate rather than silent and
 # twenty minutes later.
-curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip" -o /tmp/awscliv2.zip
+retry_with_timeout "aws cli download" 60 \
+    curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip" -o /tmp/awscliv2.zip
 unzip -q /tmp/awscliv2.zip -d /tmp
 /tmp/aws/install
 aws --version || { echo "FATAL: aws cli did not install; nothing downstream can report"; exit 1; }
@@ -95,14 +132,14 @@ PROGRESS_PID=$!
 trap 'kill ${PROGRESS_PID} 2>/dev/null || true' EXIT
 
 
-curl -fsSL https://astral.sh/uv/install.sh | sh
+retry_with_timeout "uv installer" 60 bash -c 'curl -fsSL https://astral.sh/uv/install.sh | sh'
 export PATH="${HOME}/.local/bin:${PATH}"
 
 # Stock CPython 3.14, NOT the free-threaded 3.14t build. opteryx-core stopped
 # publishing cp314t wheels after 0.9.16 and the parallelism target is native
 # threads under a released GIL — 3.14t here would silently change what is
 # being measured.
-uv python install 3.14
+retry_with_timeout "python 3.14 install" 180 uv python install 3.14
 cd "${WORK}"
 uv venv --python 3.14 .venv
 # shellcheck source=/dev/null
@@ -122,13 +159,16 @@ PYTHON="${WORK}/.venv/bin/python"
 # The version is recorded in the run manifest, so a number is always
 # attributable to an exact release rather than to "whatever main was".
 # ---------------------------------------------------------------------------
-git clone --depth 1 --branch "${HARNESS_REF}" https://github.com/mabel-dev/wrenchy-bench.git
+retry_with_timeout "harness clone" 60 bash -c \
+    "rm -rf '${WORK}/wrenchy-bench' && git clone --depth 1 --branch '${HARNESS_REF}' \
+    https://github.com/mabel-dev/wrenchy-bench.git '${WORK}/wrenchy-bench'"
 
 if [[ "${ENGINE_VERSION}" == "latest" ]]; then
-    uv pip install --python "${PYTHON}" opteryx-core
+    PIP_SPEC="opteryx-core"
 else
-    uv pip install --python "${PYTHON}" "opteryx-core==${ENGINE_VERSION}"
+    PIP_SPEC="opteryx-core==${ENGINE_VERSION}"
 fi
+retry_with_timeout "opteryx-core install" 180 uv pip install --python "${PYTHON}" "${PIP_SPEC}"
 
 # Datasets resolve relative to the WORKING DIRECTORY, not to the package, so
 # the corpora need a root to sit under — there is no checkout any more.
@@ -145,6 +185,10 @@ sync_corpus() {
     local name="$1" dest="$2"
     echo "--- syncing ${name} -> ${dest}"
     mkdir -p "${dest}"
+    # Not wrapped in retry_with_timeout: the AWS CLI applies its own 60s
+    # connect/read timeouts and retry logic by default, unlike the bare curl
+    # that hung above. If this line stalls indefinitely too, that default has
+    # changed and is worth a second look rather than a bigger hammer here.
     aws s3 sync --only-show-errors "${CORPUS_PREFIX}/${name}/" "${dest}/"
 }
 
