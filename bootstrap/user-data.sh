@@ -52,12 +52,46 @@ trap on_error ERR
 echo "=== weekly bench ${RUN_ID} · engine ${ENGINE_REF} · harness ${HARNESS_REF}"
 mkdir -p "${WORK}"
 
+
 # ---------------------------------------------------------------------------
 # Toolchain
 # ---------------------------------------------------------------------------
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
 apt-get install -y -qq git build-essential clang lld pkg-config libssl-dev curl unzip
+
+# ⛔ THE AWS CLI IS NOT IN THE UBUNTU BASE IMAGE. Canonical ships no awscli;
+# only Amazon Linux does. This script calls `aws` five times — corpus sync,
+# bundle upload, STATUS, and the error handler — so without this the run gets
+# all the way through `make compile`, dies at the first sync, and CANNOT SAY SO:
+# the ERR trap's own reporting is an `aws s3 cp`. The result is no STATUS, no
+# bundle, no log, and a box idling until the 7h watchdog. Installed FIRST, and
+# asserted, so a failure here is loud and immediate rather than silent and
+# twenty minutes later.
+curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip" -o /tmp/awscliv2.zip
+unzip -q /tmp/awscliv2.zip -d /tmp
+/tmp/aws/install
+aws --version || { echo "FATAL: aws cli did not install; nothing downstream can report"; exit 1; }
+
+# Ship the log to S3 every 30s for the whole run.
+#
+# Without this a run is INVISIBLE until it finishes: the bundle uploads at the
+# end, there is no SSH (egress-only SG, no key pair), and EC2 console output
+# lags by minutes and truncates. A four-hour first run with no window into it
+# is how a fifteen-minute bug costs seven hours.
+#
+# Started after the CLI install for the obvious reason, and backgrounded so it
+# cannot block the run. `|| true` because a transient S3 error must never take
+# down the benchmark it is only observing.
+(
+    while true; do
+        aws s3 cp --only-show-errors "${LOG}" \
+            "${RESULTS_BUCKET}/runs/${RUN_ID}/progress.log" 2>/dev/null || true
+        sleep 30
+    done
+) &
+PROGRESS_PID=$!
+trap 'kill ${PROGRESS_PID} 2>/dev/null || true' EXIT
 
 curl -fsSL https://sh.rustup.rs | sh -s -- -y --profile minimal
 # shellcheck source=/dev/null
