@@ -358,7 +358,7 @@ resource "aws_lambda_function" "launcher" {
       RESULTS_BUCKET   = "s3://${aws_s3_bucket.results.id}"
       ALERTS_TOPIC     = aws_sns_topic.alerts.arn
       INSTANCE_TYPE    = var.instance_type
-      ENGINE_REF       = var.engine_ref
+      ENGINE_VERSION   = var.engine_version
       HARNESS_REF      = var.harness_ref
     }
   }

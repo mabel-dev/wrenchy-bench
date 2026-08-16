@@ -37,10 +37,10 @@ variable "instance_type" {
   default = "c8g.4xlarge"
 }
 
-variable "engine_ref" {
-  description = "opteryx-core ref the weekly run builds and measures"
+variable "engine_version" {
+  description = "opteryx-core version the run installs and measures; \"latest\" or an exact pin"
   type        = string
-  default     = "main"
+  default     = "latest"
 }
 
 variable "harness_ref" {

@@ -30,33 +30,26 @@ from harness.config import SUITE_BY_ID  # noqa: E402
 from harness.probe import Probe  # noqa: E402
 
 
-def bind_engine(checkout: str):
-    """Import opteryx FROM THE CHECKOUT, and prove that is what happened.
+def bind_engine():
+    """Import the installed opteryx and report exactly which one it is.
 
-    ⛔ Without this the driver imports whatever `opteryx` is on the path — on a
-    developer machine that is the PyPI wheel in site-packages, not the tree
-    that was just compiled. The failure is not loud: the wrong engine resolves
-    `testdata.*` relative to its own location, so every query returns
-    EmptyDatasetError, and a machine that happened to have a *working*
-    installed copy would instead have produced a full set of plausible numbers
-    for an engine nobody was testing.
+    The suite measures the PUBLISHED WHEEL. opteryx-core releases several times
+    a week, so a wheel tracks development finer than a weekly benchmark can
+    resolve, and it measures what users actually get rather than whatever main
+    happened to be at 02:00 on a Sunday.
 
-    sys.path[0] is the SCRIPT's directory for a script invocation, never the
-    working directory, so running from inside the checkout is not enough.
+    The resolved path is printed and recorded, not asserted: an editable
+    checkout on the path is a legitimate way to run this locally, but a run
+    that cannot say which engine produced its numbers is not.
     """
-    checkout = os.path.abspath(checkout)
-    sys.path.insert(0, checkout)
     import opteryx
 
-    resolved = os.path.abspath(opteryx.__file__)
-    if not resolved.startswith(checkout + os.sep):
-        raise RuntimeError(
-            f"opteryx resolved to {resolved}, which is outside the checkout at "
-            f"{checkout}. The suite would have measured a different engine than "
-            "the one it reports. Remove the installed copy from the environment, "
-            "or point --checkout at the tree that is actually on the path."
-        )
+    print(
+        f"engine: {opteryx.__version__}+{opteryx.__build__} from {opteryx.__file__}",
+        file=sys.stderr,
+    )
     return opteryx
+
 
 QUERY_ROOT = os.path.join(os.path.dirname(HERE), "queries")
 
@@ -290,13 +283,12 @@ def blank_engine_telemetry() -> dict:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run one benchmark line")
     parser.add_argument("--line", required=True, choices=sorted(SUITE_BY_ID))
-    parser.add_argument("--checkout", required=True, help="opteryx-core checkout to import from")
     parser.add_argument("--run", required=True, help="JSON run context (run_id, engine_version, …)")
     parser.add_argument("--out", required=True, help="JSONL destination")
     parser.add_argument("--filter", default=None, help="regex over query names")
     args = parser.parse_args()
 
-    opteryx = bind_engine(args.checkout)
+    opteryx = bind_engine()
     line = SUITE_BY_ID[args.line]
     run = json.loads(args.run)
     queries = load_queries(line)
@@ -321,8 +313,7 @@ def main() -> int:
 
     print(
         f"{line.label}: {len(queries)} queries x {line.iterations} iterations, "
-        f"{line.timeout_s:.0f}s timeout\n"
-        f"  engine: {opteryx.__version__}+{opteryx.__build__} from {opteryx.__file__}",
+        f"{line.timeout_s:.0f}s timeout",
         file=sys.stderr,
     )
 

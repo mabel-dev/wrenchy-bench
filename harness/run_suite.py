@@ -44,7 +44,7 @@ def _sh(argv: list[str], cwd: str | None = None) -> str:
     ).stdout.strip()
 
 
-def resolve_preload(checkout: str, python: str) -> str:
+def resolve_preload(python: str) -> str:
     """Resolve the mimalloc preload, and refuse to run without it.
 
     The Makefile's BENCH_PRELOAD falls back to no preload when the allocator is
@@ -54,7 +54,6 @@ def resolve_preload(checkout: str, python: str) -> str:
     """
     path = _sh(
         [python, "-c", "import draken; print(draken.preload_library_path() or '')"],
-        cwd=checkout,
     )
     if not path or not os.path.exists(path):
         raise RuntimeError(
@@ -80,40 +79,41 @@ def drop_page_cache() -> bool:
     return True
 
 
-def engine_identity(checkout: str, python: str) -> dict:
-    # `sys.path.insert(0, checkout)` and not merely cwd=checkout: a `-c`
-    # invocation puts the working directory on the path, but the driver runs as
-    # a script and does not, so the two would disagree about which engine is
-    # under test. Both bind the same way and both assert the result.
+def engine_identity(python: str) -> dict:
+    """Version, build and resolved path of the INSTALLED engine.
+
+    There is no git sha any more: the suite measures a published release, so
+    `<version>+<build>` IS the identity, and it is a more precise one than a
+    branch name — `main` at 02:00 on a Sunday is not a thing anyone can go back
+    and re-measure.
+    """
     identity = _sh(
         [
             python,
             "-c",
-            f"import sys; sys.path.insert(0, {checkout!r}); import opteryx, os; "
-            f"assert os.path.abspath(opteryx.__file__).startswith({checkout!r}), opteryx.__file__; "
-            "print(opteryx.__version__); print(opteryx.__build__)",
+            "import opteryx; print(opteryx.__version__); print(opteryx.__build__); "
+            "print(opteryx.__file__)",
         ],
-        cwd=checkout,
     ).splitlines()
-    if len(identity) != 2:
+    if len(identity) != 3:
         raise RuntimeError(
-            f"could not read opteryx version/build from the checkout at {checkout} — "
-            "is the engine compiled (`make compile`), and is the checkout the copy "
-            "on the path?"
+            "could not read the opteryx version — is opteryx-core installed in this "
+            "interpreter? (`uv pip install opteryx-core`)"
         )
     return {
         "engine_version": identity[0],
         "engine_build": int(identity[1]),
-        "git_sha": _sh(["git", "rev-parse", "HEAD"], cwd=checkout),
-        "git_dirty": bool(_sh(["git", "status", "--porcelain"], cwd=checkout)),
+        "engine_path": identity[2],
+        "git_sha": None,
+        "git_dirty": None,
     }
 
 
-def verify_corpora(checkout: str, lines: list) -> dict:
+def verify_corpora(data_root: str, lines: list) -> dict:
     """Verify every corpus the run will read, before any of it runs."""
     hashes = {}
     for name in sorted({line.corpus for line in lines}):
-        root = os.path.join(checkout, CORPORA[name].dest)
+        root = os.path.join(data_root, CORPORA[name].dest)
         if not os.path.isdir(root):
             raise FileNotFoundError(
                 f"corpus {name} is missing at {root}. The suite never generates "
@@ -144,7 +144,7 @@ def flag_unstable(records: list[dict]) -> None:
                     row["status"] = "unstable"
 
 
-def run_line(line, checkout: str, out_dir: str, env: dict, run: dict, python: str):
+def run_line(line, data_root: str, out_dir: str, env: dict, run: dict, python: str):
     """Run one line in its own process and read back what it wrote."""
     raw_dir = os.path.join(out_dir, "raw")
     console_dir = os.path.join(out_dir, "console")
@@ -156,7 +156,6 @@ def run_line(line, checkout: str, out_dir: str, env: dict, run: dict, python: st
         python,
         os.path.join(HARNESS, "bench_runner.py"),
         "--line", line.id,
-        "--checkout", checkout,
         "--run", json.dumps(run),
         "--out", jsonl,
     ]
@@ -166,7 +165,7 @@ def run_line(line, checkout: str, out_dir: str, env: dict, run: dict, python: st
 
     with open(os.path.join(console_dir, f"{line.id}.log"), "w") as console:
         code, reading, wall_ms = probe.probe_child(
-            argv, cwd=checkout, env=env, stdout=console, stderr=subprocess.STDOUT
+            argv, cwd=data_root, env=env, stdout=console, stderr=subprocess.STDOUT
         )
 
     result = {
@@ -215,7 +214,11 @@ def calibration_total(records: list[dict]) -> float:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run the weekly Opteryx benchmark suite")
-    parser.add_argument("--checkout", required=True, help="path to the opteryx-core checkout")
+    parser.add_argument(
+        "--data-root",
+        required=True,
+        help="directory holding testdata/ and scratch/ — datasets resolve relative to it",
+    )
     parser.add_argument("--out", required=True, help="directory to write the run bundle into")
     parser.add_argument("--python", default=sys.executable)
     parser.add_argument("--run-id", default=None, help="defaults to the UTC start time")
@@ -223,7 +226,7 @@ def main() -> int:
     parser.add_argument("--skip-calibration", action="store_true")
     args = parser.parse_args()
 
-    checkout = os.path.abspath(args.checkout)
+    data_root = os.path.abspath(args.data_root)
     out_dir = os.path.abspath(args.out)
     os.makedirs(out_dir, exist_ok=True)
 
@@ -233,9 +236,9 @@ def main() -> int:
 
     lines = [SUITE_BY_ID[i] for i in args.only.split(",")] if args.only else SUITE
 
-    identity = engine_identity(checkout, args.python)
-    preload = resolve_preload(checkout, args.python)
-    corpus_hashes = verify_corpora(checkout, lines)
+    identity = engine_identity(args.python)
+    preload = resolve_preload(args.python)
+    corpus_hashes = verify_corpora(data_root, lines)
     facts = probe.host_facts()
 
     run = {"run_id": run_id, "run_date": started.isoformat(), **identity}
@@ -248,7 +251,7 @@ def main() -> int:
     line_results: list[dict] = []
 
     for line in lines:
-        records, result = run_line(line, checkout, out_dir, env, run, args.python)
+        records, result = run_line(line, data_root, out_dir, env, run, args.python)
         all_records.extend(records)
         line_results.append(result)
 
@@ -263,7 +266,7 @@ def main() -> int:
     if not args.skip_calibration and calibration["open_ms"]:
         print("  ▸ calibration (closing bookend)", flush=True)
         closing, _ = run_line(
-            SUITE_BY_ID[CALIBRATION_LINE], checkout, out_dir, env, run, args.python
+            SUITE_BY_ID[CALIBRATION_LINE], data_root, out_dir, env, run, args.python
         )
         calibration["close_ms"] = calibration_total(closing)
         if calibration["close_ms"]:

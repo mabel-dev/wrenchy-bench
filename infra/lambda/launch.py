@@ -35,7 +35,7 @@ CORPUS_PREFIX = os.environ["CORPUS_PREFIX"]
 RESULTS_BUCKET = os.environ["RESULTS_BUCKET"]
 ALERTS_TOPIC = os.environ["ALERTS_TOPIC"]
 INSTANCE_TYPE = os.environ.get("INSTANCE_TYPE", "c8g.4xlarge")
-ENGINE_REF = os.environ.get("ENGINE_REF", "main")
+ENGINE_VERSION = os.environ.get("ENGINE_VERSION", "latest")
 HARNESS_REF = os.environ.get("HARNESS_REF", "main")
 
 # Ubuntu 24.04 arm64, resolved at launch rather than pinned: a stale AMI is a
@@ -72,7 +72,7 @@ def _user_data(run_id: str) -> str:
     header = "\n".join(
         [
             "#!/usr/bin/env bash",
-            f"export ENGINE_REF='{ENGINE_REF}'",
+            f"export ENGINE_VERSION='{ENGINE_VERSION}'",
             f"export HARNESS_REF='{HARNESS_REF}'",
             f"export CORPUS_PREFIX='{CORPUS_PREFIX}'",
             f"export RESULTS_BUCKET='{RESULTS_BUCKET}'",
@@ -137,7 +137,7 @@ def handler(event, context):
                         {"Key": "Name", "Value": f"opteryx-bench-{run_id}"},
                         {"Key": "project", "Value": "wrenchy-bench"},
                         {"Key": "run_id", "Value": run_id},
-                        {"Key": "engine_ref", "Value": ENGINE_REF},
+                        {"Key": "engine_version", "Value": ENGINE_VERSION},
                     ],
                 }
             ],

@@ -36,6 +36,13 @@ nothing.
 
 ## How a run happens
 
+The box installs the **published wheel** rather than building from source.
+opteryx-core releases four or five times a week, so a wheel tracks development
+finer than a weekly benchmark can resolve, measures what users actually get,
+and takes the whole toolchain off a machine that only needs to run queries.
+The version is recorded per run, so a number is attributable to an exact
+release rather than to "whatever main was".
+
 **Launching happens in AWS. GitHub only collects.** Nothing outside the account
 can start an EC2 instance in it — the one external identity that exists is
 read-only on the results bucket.
@@ -48,7 +55,7 @@ EventBridge Scheduler, Sun 02:00 UTC
        └─ RunInstances + arms the 8h kill-switch
             └─ the box
                shutdown -h +420 (watchdog, first)
-               make compile at the pinned engine ref
+               pip install opteryx-core (the published wheel)
                s3 sync the corpora, verify every manifest
                SF1 bookend, 7 lines, SF1 bookend
                write bundle to S3, STATUS last
@@ -146,8 +153,8 @@ python corpus/publish.py --source ../opteryx-core/testdata/job_skene --name job_
 ## Local use
 
 ```bash
-python harness/run_suite.py --checkout ../opteryx-core --out /tmp/bundle \
-    --only tpch_sf1_skene --skip-calibration
+python harness/run_suite.py --data-root <dir with testdata/ and scratch/> \
+    --out /tmp/bundle --only tpch_sf1_skene --skip-calibration
 python harness/report.py --bundle /tmp/bundle --site-data site/data
 python harness/publish.py --bundle /tmp/bundle --dry-run
 ```

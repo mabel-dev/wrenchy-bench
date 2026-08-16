@@ -3,7 +3,7 @@
 # Instance bootstrap for the weekly benchmark run. Passed as EC2 user-data by
 # the GitHub Actions launcher; templated with the values below.
 #
-#   ENGINE_REF      git ref of opteryx-core to build and measure
+#   ENGINE_VERSION  opteryx-core version to install and measure ("latest" or a pin)
 #   HARNESS_REF     git ref of this repo
 #   CORPUS_PREFIX   s3://opteryx-bench-corpora/v2026-08
 #   RESULTS_BUCKET  s3://…
@@ -16,13 +16,14 @@
 
 set -Eeuo pipefail
 
-ENGINE_REF="${ENGINE_REF:-main}"
+ENGINE_VERSION="${ENGINE_VERSION:-latest}"
 HARNESS_REF="${HARNESS_REF:-main}"
 CORPUS_PREFIX="${CORPUS_PREFIX:?}"
 RESULTS_BUCKET="${RESULTS_BUCKET:?}"
 RUN_ID="${RUN_ID:?}"
 
 WORK=/opt/bench
+DATA="${WORK}/data"
 BUNDLE="${WORK}/bundle"
 LOG=/var/log/bench-bootstrap.log
 
@@ -49,7 +50,7 @@ on_error() {
 }
 trap on_error ERR
 
-echo "=== weekly bench ${RUN_ID} · engine ${ENGINE_REF} · harness ${HARNESS_REF}"
+echo "=== weekly bench ${RUN_ID} · engine ${ENGINE_VERSION} · harness ${HARNESS_REF}"
 mkdir -p "${WORK}"
 
 
@@ -58,7 +59,7 @@ mkdir -p "${WORK}"
 # ---------------------------------------------------------------------------
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
-apt-get install -y -qq git build-essential clang lld pkg-config libssl-dev curl unzip
+apt-get install -y -qq git curl unzip
 
 # ⛔ THE AWS CLI IS NOT IN THE UBUNTU BASE IMAGE. Canonical ships no awscli;
 # only Amazon Linux does. This script calls `aws` five times — corpus sync,
@@ -93,9 +94,6 @@ aws --version || { echo "FATAL: aws cli did not install; nothing downstream can 
 PROGRESS_PID=$!
 trap 'kill ${PROGRESS_PID} 2>/dev/null || true' EXIT
 
-curl -fsSL https://sh.rustup.rs | sh -s -- -y --profile minimal
-# shellcheck source=/dev/null
-source "${HOME}/.cargo/env"
 
 curl -fsSL https://astral.sh/uv/install.sh | sh
 export PATH="${HOME}/.local/bin:${PATH}"
@@ -112,19 +110,31 @@ source .venv/bin/activate
 PYTHON="${WORK}/.venv/bin/python"
 
 # ---------------------------------------------------------------------------
-# Build the engine from source.
+# Install the engine.
 #
-# Not a wheel: the runners sys.path.insert the repo root, so an installed
-# opteryx would be shadowed by the source tree anyway. Building is also what we
-# want — the weekly measures main, not last month's release.
+# The PUBLISHED WHEEL, not a source build. opteryx-core releases four or five
+# times a week, so a wheel tracks development at better than weekly resolution
+# — which is all a weekly benchmark can resolve anyway — and it measures what
+# users actually get. It also takes the entire toolchain off this box: no rust,
+# no clang, no twenty-minute `make compile`, and no build that can fail at
+# 02:00 on a Sunday.
+#
+# The version is recorded in the run manifest, so a number is always
+# attributable to an exact release rather than to "whatever main was".
 # ---------------------------------------------------------------------------
-git clone --depth 50 https://github.com/mabel-dev/opteryx-core.git
 git clone --depth 1 --branch "${HARNESS_REF}" https://github.com/mabel-dev/wrenchy-bench.git
 
-cd "${WORK}/opteryx-core"
-git checkout "${ENGINE_REF}"
-uv pip install -r tests/requirements.txt 2>/dev/null || uv pip install cython setuptools setuptools-rust wheel
-make compile
+if [[ "${ENGINE_VERSION}" == "latest" ]]; then
+    uv pip install --python "${PYTHON}" opteryx-core
+else
+    uv pip install --python "${PYTHON}" "opteryx-core==${ENGINE_VERSION}"
+fi
+
+# Datasets resolve relative to the WORKING DIRECTORY, not to the package, so
+# the corpora need a root to sit under — there is no checkout any more.
+mkdir -p "${DATA}/testdata" "${DATA}/scratch"
+
+"${PYTHON}" -c "import opteryx; print(f'engine {opteryx.__version__}+{opteryx.__build__} from {opteryx.__file__}')"
 
 # ---------------------------------------------------------------------------
 # Corpora. Synced read-only and verified against their manifests; never
@@ -146,13 +156,13 @@ sync_corpus() {
 # exist in GCS so the engine can query them as datasets (Opteryx has a GCS
 # filesystem and no S3 one), but the runner never reads that copy: GCS egress
 # to EC2 would be ~$9 a run, more than the compute it feeds.
-sync_corpus tpch_1_skene   "${WORK}/opteryx-core/testdata/tpch_1_skene"
-sync_corpus tpch_10_skene  "${WORK}/opteryx-core/testdata/tpch_10_skene"
-sync_corpus tpch_100_skene "${WORK}/opteryx-core/testdata/tpch_100_skene"
-sync_corpus job_skene      "${WORK}/opteryx-core/testdata/job_skene"
-sync_corpus h2o_skene      "${WORK}/opteryx-core/testdata/h2o_skene"
-sync_corpus hits_partitioned "${WORK}/opteryx-core/scratch/hits_partitioned"
-sync_corpus hits_skene     "${WORK}/opteryx-core/scratch/hits_skene"
+sync_corpus tpch_1_skene   "${DATA}/testdata/tpch_1_skene"
+sync_corpus tpch_10_skene  "${DATA}/testdata/tpch_10_skene"
+sync_corpus tpch_100_skene "${DATA}/testdata/tpch_100_skene"
+sync_corpus job_skene      "${DATA}/testdata/job_skene"
+sync_corpus h2o_skene      "${DATA}/testdata/h2o_skene"
+sync_corpus hits_partitioned "${DATA}/scratch/hits_partitioned"
+sync_corpus hits_skene     "${DATA}/scratch/hits_skene"
 
 # ---------------------------------------------------------------------------
 # Run
@@ -165,9 +175,9 @@ export BENCH_INSTANCE_TYPE="$(imds instance-type)"
 export BENCH_AZ="$(imds placement/availability-zone)"
 export BENCH_STORAGE="${BENCH_STORAGE:-$(lsblk -ndo ROTA,SIZE / | tr -s ' ')}"
 
-cd "${WORK}/opteryx-core"
+cd "${DATA}"
 "${PYTHON}" "${WORK}/wrenchy-bench/harness/run_suite.py" \
-    --checkout "${WORK}/opteryx-core" \
+    --data-root "${DATA}" \
     --out "${BUNDLE}" \
     --python "${PYTHON}" \
     --run-id "${RUN_ID}" || echo "suite exited non-zero; publishing what it produced"

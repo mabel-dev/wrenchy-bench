@@ -75,8 +75,12 @@ RUN_COLUMNS: list[tuple[str, str]] = [
     ("status", "VARCHAR"),
     ("engine_version", "VARCHAR"),
     ("engine_build", "INT32"),
+    # The suite measures a published wheel, so <version>+<build> IS the engine
+    # identity and there is no git sha. These stay for runs recorded before the
+    # switch, and for a local run against a source checkout.
     ("git_sha", "VARCHAR"),
     ("git_dirty", "BOOLEAN"),
+    ("engine_path", "VARCHAR"),
     ("python_version", "VARCHAR"),
     ("gil_enabled", "BOOLEAN"),
     ("allocator_preload", "VARCHAR"),
@@ -139,6 +143,7 @@ def flatten_run(run: dict) -> dict:
         "engine_build": run.get("engine_build"),
         "git_sha": run.get("git_sha"),
         "git_dirty": run.get("git_dirty"),
+        "engine_path": run.get("engine_path"),
         "python_version": host.get("python_version"),
         "gil_enabled": host.get("gil_enabled"),
         "allocator_preload": run.get("allocator_preload"),
