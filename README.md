@@ -16,7 +16,7 @@ on a [GitHub Pages site](https://mabel-dev.github.io/wrenchy-bench/).
 | ClickBench partitioned | Parquet · zstd | `hits_rugo_262k` | 43 | 5 | 8.1 GB |
 | ClickBench | Skene · lz4 | `hits_skene` | 43 | 5 | 14 GB |
 
-271 queries, ≈ 4 hours, ≈ $3 a run. Stock CPython 3.14 — execution is native
+280 queries, ≈ 4 hours, ≈ $3 a run. Stock CPython 3.14 — execution is native
 and already runs with the GIL released, so the free-threaded build bought
 nothing.
 
@@ -54,7 +54,7 @@ up.
 ## Layout
 
 ```
-queries/            271 vendored .sql files — a benchmark repo owns its queries
+queries/            193 vendored .sql files — a benchmark repo owns its queries
   tpch/ job/ h2o/ clickbench/
 harness/
   config.py       the seven lines, their corpora, iterations and thresholds
