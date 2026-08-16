@@ -27,7 +27,7 @@ concurrency:
 
 env:
   AWS_REGION: us-east-1
-  CORPUS_PREFIX: gs://opteryx_data/benchmarks/v2026-08
+  CORPUS_PREFIX: s3://opteryx-bench-corpora/v2026-08
   RESULTS_BUCKET: s3://opteryx-bench-results
 
 jobs:

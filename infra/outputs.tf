@@ -3,9 +3,9 @@ output "actions_role_arn" {
   value       = aws_iam_role.actions.arn
 }
 
-output "gcp_key_secret" {
-  description = "Put the read-only GCP service-account key here before the first run"
-  value       = aws_secretsmanager_secret.gcp_reader.name
+output "corpus_prefix" {
+  description = "Set as CORPUS_PREFIX in the workflow, with the version suffix appended"
+  value       = "s3://${aws_s3_bucket.corpora.id}"
 }
 
 output "results_bucket" {

@@ -5,7 +5,7 @@
 #
 #   ENGINE_REF      git ref of opteryx-core to build and measure
 #   HARNESS_REF     git ref of this repo
-#   CORPUS_PREFIX   gs://opteryx_data/benchmarks/v2026-08
+#   CORPUS_PREFIX   s3://opteryx-bench-corpora/v2026-08
 #   RESULTS_BUCKET  s3://…
 #   RUN_ID          the run identifier the Action is waiting on
 #
@@ -66,20 +66,6 @@ source "${HOME}/.cargo/env"
 curl -fsSL https://astral.sh/uv/install.sh | sh
 export PATH="${HOME}/.local/bin:${PATH}"
 
-# gcloud, for the corpus pull. The corpora live in GCS as engine-referenceable
-# datasets; this box reads them from there directly rather than from a second
-# copy that would have to be kept in step.
-curl -fsSL https://sdk.cloud.google.com | bash -s -- --disable-prompts --install-dir="${WORK}"
-export PATH="${WORK}/google-cloud-sdk/bin:${PATH}"
-
-# Read-only service-account key, held in Secrets Manager and never written to
-# the image or the user-data. The instance role can read exactly this secret.
-aws secretsmanager get-secret-value --secret-id "${GCP_KEY_SECRET:-opteryx-bench/gcp-reader}" \
-    --query SecretString --output text >"${WORK}/gcp-key.json"
-chmod 600 "${WORK}/gcp-key.json"
-gcloud auth activate-service-account --key-file="${WORK}/gcp-key.json" --quiet
-trap 'shred -u "${WORK}/gcp-key.json" 2>/dev/null || rm -f "${WORK}/gcp-key.json"' EXIT
-
 # Stock CPython 3.14, NOT the free-threaded 3.14t build. opteryx-core stopped
 # publishing cp314t wheels after 0.9.16 and the parallelism target is native
 # threads under a released GIL — 3.14t here would silently change what is
@@ -115,17 +101,17 @@ sync_corpus() {
     local name="$1" dest="$2"
     echo "--- syncing ${name} -> ${dest}"
     mkdir -p "${dest}"
-    gcloud storage rsync --recursive "${CORPUS_PREFIX}/${name}" "${dest}"
+    aws s3 sync --only-show-errors "${CORPUS_PREFIX}/${name}/" "${dest}/"
 }
 
 # Six Skene mirrors and one parquet corpus — ClickBench-parquet is a suite line
 # in its own right. JOB and H2O are Skene too: upstream ships rows, not files,
 # so the format was always this harness's choice and is made once, everywhere.
 #
-# Pulled from GCS, where the corpora live as datasets the engine can reference.
-# One copy and one address. This is the largest single cost in the run — GCS
-# egress to EC2 at ~$0.12/GB — and is the accepted price of not maintaining a
-# second copy.
+# Read from S3 in this region, where the transfer is free. The same bytes also
+# exist in GCS so the engine can query them as datasets (Opteryx has a GCS
+# filesystem and no S3 one), but the runner never reads that copy: GCS egress
+# to EC2 would be ~$9 a run, more than the compute it feeds.
 sync_corpus tpch_1_skene   "${WORK}/opteryx-core/testdata/tpch_1_skene"
 sync_corpus tpch_10_skene  "${WORK}/opteryx-core/testdata/tpch_10_skene"
 sync_corpus tpch_100_skene "${WORK}/opteryx-core/testdata/tpch_100_skene"

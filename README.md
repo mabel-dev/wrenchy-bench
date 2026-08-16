@@ -36,7 +36,7 @@ run bundle and put it in S3 — it holds no GitHub and no Opteryx credentials.
   └── infra/launch.sh          run-instances with bootstrap/user-data.sh as user-data
         └── the box            shutdown -h +420 (watchdog, first)
                                make compile at the pinned engine ref
-                               gcloud storage rsync the corpora, verify manifests
+                               aws s3 sync the corpora, verify every manifest
                                calibration bookend, seven lines, closing bookend
                                write the bundle to S3, STATUS last
                                shutdown -h now
@@ -108,18 +108,15 @@ A weekly benchmark's only job is to make week *n* comparable to week *n−1*.
 
 ## Corpora
 
-In **GCS** — `gs://opteryx_data/benchmarks/<version>/<corpus>/` — so a
-benchmark dataset is a dataset the engine can reference, not a private fixture.
-The box pulls from there directly. One copy, one address, nothing to keep in
-step.
+Read from **S3** in the runner's region — `s3://opteryx-bench-corpora/<version>/`
+— where the transfer is free. GCS to EC2 is internet egress at ~$0.12/GB: ~76 GB
+a week is ~$9 a run, ~$40/month, more than the compute it feeds and more than
+everything else here combined.
 
-GCS egress to EC2 (~$0.12/GB, so ~$9–10 a run at ~76 GB) is the largest single
-line in the run cost, larger than the compute it feeds. That is the price of a
-single copy.
-
-The instance authenticates with a read-only service-account key held in Secrets
-Manager, fetched at boot and shredded on exit — never in user-data, never in the
-AMI, never in terraform state.
+`--also-gcs` writes a second copy to `gs://opteryx_data/benchmarks/<version>/`.
+The runner never reads it. It exists because **Opteryx has a GCS filesystem and
+no S3 one** (`opteryx/connectors/io_systems/`), so without it the corpora cannot
+be referenced from the engine at all. ~$1.75/month in storage, no egress.
 
 ```bash
 python corpus/convert.py --checkout ../opteryx-core --all      # build the mirrors
