@@ -77,9 +77,10 @@ def _user_data(run_id: str) -> str:
             f"export CORPUS_PREFIX='{CORPUS_PREFIX}'",
             f"export RESULTS_BUCKET='{RESULTS_BUCKET}'",
             f"export RUN_ID='{run_id}'",
-        ]
-    )
-    return base64.b64encode((header + body).encode()).decode()
+            "",  # the body's first line is a bare `#`; without this separator
+        ]      # it lands on the end of the last export and bash reads
+    )          # `'...Z'#` as ONE word, silently appending # to the value
+    return base64.b64encode((header + "\n" + body.lstrip("\n")).encode()).decode()
 
 
 def _arm_killswitch(instance_id: str) -> None:
