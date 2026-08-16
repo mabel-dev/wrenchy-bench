@@ -1,25 +1,27 @@
-name: weekly benchmark
+name: collect benchmark results
 
-# The control plane. Launches the box, waits for the bundle, then does
-# everything else here — comparison, publishing to opteryx.telemetry, the site.
-# The instance holds no GitHub or Opteryx credentials; it only writes S3.
+# The COLLECTOR. Launching happens in AWS (EventBridge Scheduler -> Lambda), so
+# nothing here can start an EC2 instance — this workflow's AWS role is read-only
+# on the results bucket plus the platform credential.
+#
+# Runs three hours after the 02:00 UTC launch, by which time a healthy run is
+# usually finished, and waits for the rest. If it is cancelled or fails, the
+# instance still completes and still writes its bundle: re-run this workflow and
+# the results are picked up, with no second four-hour run.
 
 on:
   schedule:
-    - cron: "0 2 * * 0" # Sundays 02:00 UTC
+    - cron: "0 5 * * 0" # Sundays 05:00 UTC, three hours after the launch
   workflow_dispatch:
     inputs:
-      engine_ref:
-        description: "opteryx-core ref to build and measure"
-        default: main
-      instance_type:
-        description: "instance type (c8gd.4xlarge for local NVMe)"
-        default: c8g.4xlarge
+      run_id:
+        description: "run id to collect; defaults to the newest bundle in S3"
+        required: false
 
 permissions:
   contents: write
-  id-token: write # OIDC to AWS; no long-lived keys in the repo
-  pull-requests: write
+  id-token: write # OIDC to AWS, read-only
+  issues: write
 
 concurrency:
   group: weekly-benchmark
@@ -38,36 +40,7 @@ env:
   RESULTS_BUCKET: s3://opteryx-bench-results
 
 jobs:
-  launch:
-    runs-on: ubuntu-latest
-    outputs:
-      run_id: ${{ steps.plan.outputs.run_id }}
-      instance_id: ${{ steps.start.outputs.instance_id }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - id: plan
-        run: echo "run_id=$(date -u +%Y-%m-%dT%H:%MZ)" >> "$GITHUB_OUTPUT"
-
-      - uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ env.AWS_BENCH_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - id: start
-        name: Launch the benchmark instance
-        env:
-          RUN_ID: ${{ steps.plan.outputs.run_id }}
-          ENGINE_REF: ${{ inputs.engine_ref || 'main' }}
-          INSTANCE_TYPE: ${{ inputs.instance_type || 'c8g.4xlarge' }}
-        run: bash infra/launch.sh
-
   collect:
-    # Split from launch so the 6-hour GitHub job ceiling is never the thing
-    # that decides whether a run counts. This job does nothing but wait, and if
-    # it is cancelled the instance still finishes and still writes its bundle —
-    # re-run `collect` alone and the results are picked up.
-    needs: launch
     runs-on: ubuntu-latest
     timeout-minutes: 480
     steps:
@@ -82,15 +55,21 @@ jobs:
           role-to-assume: ${{ env.AWS_BENCH_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - id: find
+        name: Find the run to collect
+        env:
+          RUN_ID: ${{ inputs.run_id }}
+        run: bash infra/find-run.sh
+
       - name: Wait for the run bundle
         env:
-          RUN_ID: ${{ needs.launch.outputs.run_id }}
+          RUN_ID: ${{ steps.find.outputs.run_id }}
         run: bash infra/wait-for-run.sh
 
       - name: Download the bundle
         env:
-          RUN_ID: ${{ needs.launch.outputs.run_id }}
-        run: aws s3 sync "${RESULTS_BUCKET}/runs/${RUN_ID}/" bundle/
+          RUN_ID: ${{ steps.find.outputs.run_id }}
+        run: aws s3 sync "${RESULTS_BUCKET}/runs/${{ steps.find.outputs.run_id }}/" bundle/
 
       - id: report
         name: Compare against history and build the site data
@@ -116,7 +95,7 @@ jobs:
           git config user.name  "opteryx-bench"
           git config user.email "bench@opteryx.app"
           git add site/data
-          git diff --quiet --cached || git commit -m "bench: ${{ needs.launch.outputs.run_id }}"
+          git diff --quiet --cached || git commit -m "bench: ${{ steps.find.outputs.run_id }}"
           git push
 
       - name: Raise an issue on a hard failure
@@ -125,7 +104,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh issue create \
-            --title "Benchmark regression · ${{ needs.launch.outputs.run_id }}" \
+            --title "Benchmark regression · ${{ steps.find.outputs.run_id }}" \
             --body-file bundle/REPORT.md \
             --label benchmark
 

@@ -36,28 +36,40 @@ nothing.
 
 ## How a run happens
 
-GitHub Actions is the control plane. The instance's only job is to produce a
-run bundle and put it in S3 — it holds no GitHub and no Opteryx credentials.
+**Launching happens in AWS. GitHub only collects.** Nothing outside the account
+can start an EC2 instance in it — the one external identity that exists is
+read-only on the results bucket.
 
 ```
-.github/workflows/weekly.yml   Sunday 02:00 UTC
-  └── infra/launch.sh          run-instances with bootstrap/user-data.sh as user-data
-        └── the box            shutdown -h +420 (watchdog, first)
-                               make compile at the pinned engine ref
-                               aws s3 sync the corpora, verify every manifest
-                               calibration bookend, seven lines, closing bookend
-                               write the bundle to S3, STATUS last
-                               shutdown -h now
-  └── infra/wait-for-run.sh    poll for STATUS
-  └── harness/report.py        compare against history, write site/data
-  └── harness/publish.py       commit rows to opteryx.telemetry.*
-  └── commit + Pages deploy
+AWS                                    GitHub Actions
+────────────────────────────────────────────────────────────────
+EventBridge Scheduler, Sun 02:00 UTC
+  └─ Lambda opteryx-bench-launcher
+       └─ RunInstances + arms the 8h kill-switch
+            └─ the box
+               shutdown -h +420 (watchdog, first)
+               make compile at the pinned engine ref
+               s3 sync the corpora, verify every manifest
+               SF1 bookend, 7 lines, SF1 bookend
+               write bundle to S3, STATUS last
+               terminates itself
+                                       Sun 05:00 UTC (or dispatch)
+                                       find newest run, wait for STATUS
+                                       compare against history
+                                       commit site/data, deploy Pages
+                                       publish to opteryx.telemetry
 ```
 
-Splitting `launch` from `collect` means the 6-hour GitHub job ceiling never
-decides whether a run counts: if `collect` is cancelled the instance still
-finishes and still writes its bundle, and re-running `collect` alone picks it
-up.
+Collection is a separate schedule so a failed comparison can be re-run without
+paying for another four-hour benchmark: the bundle is already in S3, so
+re-running the workflow picks it up. It also means the 6-hour Actions job
+ceiling never decides whether a run counts.
+
+Start a run by hand with:
+
+```bash
+aws lambda invoke --function-name opteryx-bench-launcher /dev/stdout
+```
 
 ## Layout
 
@@ -76,7 +88,7 @@ harness/
 corpus/
   convert.py      build the Skene mirrors from parquet, once
   publish.py      manifest, push to GCS, mirror to S3
-infra/            terraform + the launcher and its kill-switch
+infra/            terraform, the launcher Lambda, and the collector's helpers
 bootstrap/        what the instance runs
 site/             the static results browser
 docs/PREFLIGHT.md what this still needs from opteryx-core
@@ -153,12 +165,12 @@ and read [docs/PREFLIGHT.md](docs/PREFLIGHT.md).
 
 ### Runaway protection
 
-Three layers, because each has a blind spot the next covers: `shutdown -h +420`
-armed as the first command in user-data; the collect job's `always()` terminate
-step; and an 8-hour CloudWatch alarm carrying the native
-`arn:aws:automate:<region>:ec2:terminate` action, armed per-instance at launch.
-The third needs no scheduler and no Lambda, and is the one that still works when
-the workflow run itself is cancelled.
+Two layers, each covering the other's blind spot: `shutdown -h +420` armed as
+the first command in user-data, which assumes user-data got that far and the
+kernel is responsive; and an 8-hour CloudWatch alarm carrying the native
+`arn:aws:automate:<region>:ec2:terminate` action, armed by the launcher, which
+assumes nothing. The collector holds no `ec2` write permissions at all —
+terminating is AWS's job.
 
 ## History
 

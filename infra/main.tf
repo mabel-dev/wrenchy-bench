@@ -1,9 +1,15 @@
 # Wrenchy Bench infrastructure.
 #
-# Deliberately small. GitHub Actions is the control plane — there is no Lambda,
-# no EventBridge Scheduler and no long-lived compute here. This stack owns the
-# two buckets, the identity the Action assumes, the identity the instance runs
-# as, and the alarm that fires when a run never reports.
+# The trigger lives in AWS. EventBridge Scheduler fires a Lambda weekly, the
+# Lambda launches the instance, the instance runs the suite and writes its
+# bundle to S3. Nothing outside this account can start an EC2 instance in it:
+# no principal outside the account holds ec2:RunInstances, and the one external
+# identity that exists (GitHub, below) is read-only.
+#
+# GitHub still COLLECTS — a scheduled workflow reads the finished bundle from
+# S3, compares it against history, and publishes the site. That half needs only
+# read access, and keeping it in Actions means a bad comparison can be re-run
+# without paying for another four hours of EC2.
 
 terraform {
   required_version = ">= 1.6"
@@ -121,6 +127,9 @@ resource "aws_iam_instance_profile" "instance" {
 # GitHub Actions identity, via OIDC. No long-lived access keys anywhere.
 # ---------------------------------------------------------------------------
 
+# The collector's identity. It can read finished bundles and the platform
+# credential, and nothing else — no ec2:*, no iam:PassRole. Compare with the
+# previous version of this file, where the same role could launch instances.
 resource "aws_iam_openid_connect_provider" "github" {
   url             = "https://token.actions.githubusercontent.com"
   client_id_list  = ["sts.amazonaws.com"]
@@ -158,26 +167,8 @@ resource "aws_iam_role_policy" "actions" {
     Statement = [
       {
         Effect   = "Allow"
-        Action   = ["s3:GetObject", "s3:ListBucket", "s3:PutObject"]
+        Action   = ["s3:GetObject", "s3:ListBucket"]
         Resource = [aws_s3_bucket.results.arn, "${aws_s3_bucket.results.arn}/*"]
-      },
-      {
-        Effect   = "Allow"
-        Action   = ["ssm:GetParameter", "ssm:GetParameters"]
-        Resource = "*"
-      },
-      {
-        Effect = "Allow"
-        Action = ["ec2:DescribeInstances", "ec2:DescribeImages", "ec2:RunInstances", "ec2:CreateTags"]
-        # RunInstances is deliberately unconstrained on resource but constrained
-        # on instance type below — the launcher resolves an AMI at run time, so
-        # pinning the image ARN here would break every Ubuntu release.
-        Resource = "*"
-      },
-      {
-        Effect   = "Allow"
-        Action   = "iam:PassRole"
-        Resource = aws_iam_role.instance.arn
       },
       {
         # The platform credential used to commit results into
@@ -188,21 +179,18 @@ resource "aws_iam_role_policy" "actions" {
         Resource = var.opteryx_pat_secret_arn
       },
       {
-        # The per-instance 8h kill-switch. Scoped to this project's alarm name
-        # so the workflow cannot touch any other alarm in the account.
+        # Read-only: find-run.sh maps a run id back to its instance so the
+        # kill-switch alarm can be named. No mutation of any kind.
         Effect   = "Allow"
-        Action   = ["cloudwatch:PutMetricAlarm", "cloudwatch:DeleteAlarms"]
-        Resource = "arn:aws:cloudwatch:*:*:alarm:opteryx-bench-killswitch-*"
+        Action   = "ec2:DescribeInstances"
+        Resource = "*"
       },
       {
-        # Terminate only what this project launched. A bug in the workflow must
-        # not be able to reach anything else in the account.
+        # Tidy up the kill-switch alarm after a run reports. Deleting an alarm
+        # is the only mutation the collector can make in the account.
         Effect   = "Allow"
-        Action   = "ec2:TerminateInstances"
-        Resource = "*"
-        Condition = {
-          StringEquals = { "ec2:ResourceTag/project" = "wrenchy-bench" }
-        }
+        Action   = "cloudwatch:DeleteAlarms"
+        Resource = "arn:aws:cloudwatch:*:*:alarm:opteryx-bench-killswitch-*"
       }
     ]
   })
@@ -269,3 +257,153 @@ resource "aws_sns_topic" "alerts" {
 # than declared here: a static alarm cannot carry an InstanceId dimension for an
 # instance that does not exist yet, and a wildcard dimension matches nothing.
 # This topic remains for the collect job's failure notifications.
+
+
+# ---------------------------------------------------------------------------
+# The trigger: EventBridge Scheduler -> Lambda -> RunInstances.
+#
+# The bootstrap script is uploaded to S3 and read by the Lambda at launch,
+# rather than baked into the function. The script is data, not code: changing
+# what the box runs is an object upload, not a Lambda deployment, and the
+# version that ran is recoverable from the bucket.
+# ---------------------------------------------------------------------------
+
+resource "aws_s3_object" "bootstrap" {
+  bucket = aws_s3_bucket.results.id
+  key    = "bootstrap/user-data.sh"
+  source = "${path.module}/../bootstrap/user-data.sh"
+  etag   = filemd5("${path.module}/../bootstrap/user-data.sh")
+}
+
+data "archive_file" "launcher" {
+  type        = "zip"
+  source_file = "${path.module}/lambda/launch.py"
+  output_path = "${path.module}/.build/launch.zip"
+}
+
+resource "aws_iam_role" "launcher" {
+  name = "${local.name}-launcher"
+  tags = local.tags
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Action    = "sts:AssumeRole"
+      Principal = { Service = "lambda.amazonaws.com" }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "launcher" {
+  name = "${local.name}-launcher"
+  role = aws_iam_role.launcher.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
+        Resource = "arn:aws:logs:*:*:*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["ec2:RunInstances", "ec2:CreateTags", "ec2:DescribeImages"]
+        Resource = "*"
+      },
+      {
+        # The launcher can hand the instance its role and nothing else.
+        Effect   = "Allow"
+        Action   = "iam:PassRole"
+        Resource = aws_iam_role.instance.arn
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["ssm:GetParameter", "ssm:GetParameters"]
+        Resource = "*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = "s3:GetObject"
+        Resource = "${aws_s3_bucket.results.arn}/bootstrap/*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = "cloudwatch:PutMetricAlarm"
+        Resource = "arn:aws:cloudwatch:*:*:alarm:opteryx-bench-killswitch-*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = "sns:Publish"
+        Resource = aws_sns_topic.alerts.arn
+      }
+    ]
+  })
+}
+
+resource "aws_lambda_function" "launcher" {
+  function_name    = "${local.name}-launcher"
+  role             = aws_iam_role.launcher.arn
+  handler          = "launch.handler"
+  runtime          = "python3.13"
+  filename         = data.archive_file.launcher.output_path
+  source_code_hash = data.archive_file.launcher.output_base64sha256
+  timeout          = 60
+  tags             = local.tags
+
+  environment {
+    variables = {
+      BOOTSTRAP_BUCKET = aws_s3_bucket.results.id
+      BOOTSTRAP_KEY    = aws_s3_object.bootstrap.key
+      CORPUS_PREFIX    = "s3://${aws_s3_bucket.corpora.id}/${var.corpus_version}"
+      RESULTS_BUCKET   = "s3://${aws_s3_bucket.results.id}"
+      ALERTS_TOPIC     = aws_sns_topic.alerts.arn
+      INSTANCE_TYPE    = var.instance_type
+      ENGINE_REF       = var.engine_ref
+      HARNESS_REF      = var.harness_ref
+    }
+  }
+}
+
+resource "aws_scheduler_schedule" "weekly" {
+  name                         = "${local.name}-weekly"
+  schedule_expression          = "cron(0 2 ? * SUN *)"
+  schedule_expression_timezone = "UTC"
+  # No catch-up. A run that missed its window is a run against a different
+  # engine than the one it was scheduled for, and a benchmark that fires late
+  # in a burst is worse than one that skips a week.
+  flexible_time_window { mode = "OFF" }
+
+  target {
+    arn      = aws_lambda_function.launcher.arn
+    role_arn = aws_iam_role.scheduler.arn
+    retry_policy {
+      maximum_retry_attempts = 0
+    }
+  }
+}
+
+resource "aws_iam_role" "scheduler" {
+  name = "${local.name}-scheduler"
+  tags = local.tags
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Action    = "sts:AssumeRole"
+      Principal = { Service = "scheduler.amazonaws.com" }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "scheduler" {
+  name = "${local.name}-scheduler"
+  role = aws_iam_role.scheduler.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = "lambda:InvokeFunction"
+      Resource = aws_lambda_function.launcher.arn
+    }]
+  })
+}

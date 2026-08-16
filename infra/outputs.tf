@@ -16,3 +16,8 @@ output "alerts_topic_arn" {
   description = "Subscribe an address to this to hear about runaway instances"
   value       = aws_sns_topic.alerts.arn
 }
+
+output "launcher_function" {
+  description = "Invoke this to start a run by hand: aws lambda invoke --function-name <this> /dev/stdout"
+  value       = aws_lambda_function.launcher.function_name
+}

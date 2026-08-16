@@ -25,3 +25,26 @@ variable "opteryx_pat_secret_arn" {
   type        = string
   default     = "arn:aws:secretsmanager:us-east-1:045121776141:secret:ichnos/opteryx-pat-QTY6jO"
 }
+
+variable "corpus_version" {
+  description = "Corpus prefix version the runner reads"
+  type        = string
+  default     = "v2026-08"
+}
+
+variable "instance_type" {
+  type    = string
+  default = "c8g.4xlarge"
+}
+
+variable "engine_ref" {
+  description = "opteryx-core ref the weekly run builds and measures"
+  type        = string
+  default     = "main"
+}
+
+variable "harness_ref" {
+  description = "wrenchy-bench ref the instance checks out"
+  type        = string
+  default     = "main"
+}
