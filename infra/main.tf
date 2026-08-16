@@ -33,32 +33,16 @@ locals {
 # Buckets
 # ---------------------------------------------------------------------------
 
-# Corpora: write-once, ~70GB, versioned by prefix (v2026-08/...). Versioning is
-# on because a corpus is the baseline every trend line is measured against — an
-# accidental overwrite would silently reinterpret months of history.
-resource "aws_s3_bucket" "corpora" {
-  bucket = "${local.name}-corpora"
-  tags   = local.tags
-}
-
-resource "aws_s3_bucket_versioning" "corpora" {
-  bucket = aws_s3_bucket.corpora.id
-  versioning_configuration { status = "Enabled" }
-}
+# The corpora are NOT here. They live in GCS
+# (gs://opteryx_data/benchmarks/<version>/) so the engine can reference them as
+# datasets, and the instance pulls from there directly. Results stay in AWS,
+# next to the run that produced them.
 
 # Results: append-only, a few MB per run. No lifecycle expiry — the archive is
 # the system of record and must outlive anything in the telemetry tables.
 resource "aws_s3_bucket" "results" {
   bucket = "${local.name}-results"
   tags   = local.tags
-}
-
-resource "aws_s3_bucket_public_access_block" "corpora" {
-  bucket                  = aws_s3_bucket.corpora.id
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
 }
 
 resource "aws_s3_bucket_public_access_block" "results" {
@@ -93,9 +77,13 @@ resource "aws_iam_role_policy" "instance" {
     Version = "2012-10-17"
     Statement = [
       {
+        # The read-only GCP service-account key used to pull the corpora from
+        # GCS. Scoped to this one secret: the instance has no other reason to
+        # reach Secrets Manager, and the key never appears in user-data or in
+        # the AMI.
         Effect   = "Allow"
-        Action   = ["s3:GetObject", "s3:ListBucket"]
-        Resource = [aws_s3_bucket.corpora.arn, "${aws_s3_bucket.corpora.arn}/*"]
+        Action   = "secretsmanager:GetSecretValue"
+        Resource = aws_secretsmanager_secret.gcp_reader.arn
       },
       {
         # Write-only into results, and no delete: a run cannot erase an earlier
@@ -106,6 +94,15 @@ resource "aws_iam_role_policy" "instance" {
       }
     ]
   })
+}
+
+# The value is set out of band (`aws secretsmanager put-secret-value`), never in
+# terraform: a service-account key in state is a service-account key in every
+# copy of that state.
+resource "aws_secretsmanager_secret" "gcp_reader" {
+  name        = "opteryx-bench/gcp-reader"
+  description = "Read-only GCP service account for pulling benchmark corpora from GCS"
+  tags        = local.tags
 }
 
 resource "aws_iam_instance_profile" "instance" {

@@ -17,19 +17,17 @@ from dataclasses import dataclass
 # Storage
 # --------------------------------------------------------------------------
 
-# Canonical home for the corpora: GCS, alongside everything else the engine can
-# reference, so a benchmark dataset is a dataset and not a private fixture.
+# The corpora live in GCS, alongside everything else the engine can reference,
+# so a benchmark dataset is a dataset rather than a private fixture. One copy,
+# one address: the box pulls from here directly.
+#
+# This costs GCS egress to EC2 (~$0.12/GB, so ~$9-10 a run at ~80GB) — more than
+# the compute it feeds. That is the accepted price of not having a second copy
+# of the corpora to keep in step.
 GCS_BUCKET = "opteryx_data"
 GCS_PREFIX = f"gs://{GCS_BUCKET}/benchmarks"
 
-# In-region mirror the benchmark box actually reads from.
-#
-# ⛔ NOT a redundant copy. GCS -> EC2 is internet egress at ~$0.12/GB; ~80GB a
-# week is ~$9.60 a run, against ~$3 for the compute that consumes it. S3 -> EC2
-# in the same region is free, and 80GB of S3 Standard is ~$1.85/month. The
-# mirror is written by the same publish run from the same bytes and verified by
-# the same manifest, so the two cannot drift silently.
-S3_CORPUS_PREFIX = "s3://opteryx-bench-corpora"
+# Results stay in AWS, next to the run that produced them.
 S3_RESULTS_PREFIX = "s3://opteryx-bench-results"
 
 CORPUS_VERSION = "v2026-08"

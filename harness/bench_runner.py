@@ -95,14 +95,27 @@ def load_queries(line) -> list[tuple[str, str]]:
             if not path.endswith(".sql"):
                 continue
             sql = _read(os.path.join(directory, path))
-            # `FROM x a JOIN small b ON ...` — bare table then a bare alias, so
-            # anchor on the FROM/JOIN keyword rather than on `AS`.
-            sql = re.sub(
-                rf"\b(FROM|JOIN)\s+({'|'.join(H2O_TABLES)})\b",
-                rf"\1 {dataset}.\2",
-                sql,
-                flags=re.IGNORECASE,
-            )
+            # ⛔ The two H2O workloads have DIFFERENT schemas behind the same
+            # bare name. `g*.sql` say `FROM x` but mean the groupby table,
+            # stored as `x_groupby` (id1..id3 VARCHAR, id4..id6/v1/v2 INT,
+            # v3 DOUBLE); `j*.sql` say `FROM x` and mean the join table
+            # (id1..id3 INT, id4..id6 VARCHAR, v1 DOUBLE). Binding `x` the same
+            # way for both would point the ten groupby queries at the join
+            # table — a schema that resolves far enough to produce numbers for
+            # a benchmark nobody ran.
+            if path.startswith("g"):
+                sql = re.sub(
+                    rf"\b(FROM|JOIN)\s+x\b", rf"\1 {dataset}.x_groupby", sql, flags=re.IGNORECASE
+                )
+            else:
+                # `FROM x a JOIN small b ON ...` — bare table then a bare alias,
+                # so anchor on the FROM/JOIN keyword rather than on `AS`.
+                sql = re.sub(
+                    rf"\b(FROM|JOIN)\s+({'|'.join(H2O_TABLES)})\b",
+                    rf"\1 {dataset}.\2",
+                    sql,
+                    flags=re.IGNORECASE,
+                )
             queries.append((path[:-4], sql))
         return queries
 

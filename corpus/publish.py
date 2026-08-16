@@ -1,4 +1,4 @@
-"""Build a corpus manifest, push to GCS, and mirror to S3. Run once per corpus.
+"""Build a corpus manifest and publish the corpus to GCS. Run once per corpus.
 
 The weekly run never generates data. Every corpus is built out-of-band, stamped
 with a manifest, and published; the run syncs it and verifies the hash before a
@@ -6,19 +6,10 @@ single query executes.
 
     python corpus/publish.py --source ../opteryx-core/testdata/job_skene --name job_skene
 
-Two destinations, one set of bytes:
-
-  * **GCS** (`gs://opteryx_data/benchmarks/<version>/<corpus>/`) is canonical.
-    The corpora live alongside everything else the engine can reference, so a
-    benchmark dataset is a dataset rather than a private fixture.
-  * **S3** (`s3://opteryx-bench-corpora/<version>/<corpus>/`) is the in-region
-    mirror the benchmark box reads. Not redundancy — GCS to EC2 is internet
-    egress at ~$0.12/GB, which is ~$9.60 a week against ~$3 for the compute
-    that consumes it. S3 to EC2 in the same region is free and 80GB of S3
-    Standard is ~$1.85/month.
-
-Both are written from the same local tree and verified by the same manifest, so
-they cannot drift silently. `--gcs-only` / `--s3-only` exist for re-runs.
+Published to `gs://opteryx_data/benchmarks/<version>/<corpus>/` and read from
+there by the benchmark box. One copy and one address: the corpora sit alongside
+everything else the engine can reference, so a benchmark dataset is a dataset
+rather than a private fixture, and there is no second copy to keep in step.
 
 Rebuilding a corpus means a NEW version prefix, never an overwrite. The old
 prefix stays so a comparison across the rebuild is still possible, and the
@@ -37,7 +28,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from harness import manifest  # noqa: E402
-from harness.config import CORPORA, CORPUS_VERSION, GCS_PREFIX, S3_CORPUS_PREFIX  # noqa: E402
+from harness.config import CORPORA, CORPUS_VERSION, GCS_PREFIX  # noqa: E402
 
 
 def _require(tool: str, hint: str) -> str:
@@ -55,22 +46,13 @@ def push_gcs(source: str, destination: str, dry_run: bool) -> None:
     subprocess.run(argv, check=True)
 
 
-def push_s3(source: str, destination: str, dry_run: bool) -> None:
-    _require("aws", "install the AWS CLI")
-    argv = ["aws", "s3", "sync", "--only-show-errors", f"{source}/", destination]
-    if dry_run:
-        argv.append("--dryrun")
-    subprocess.run(argv, check=True)
-
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Publish a corpus to GCS and S3")
+    parser = argparse.ArgumentParser(description="Publish a corpus to GCS")
     parser.add_argument("--source", required=True, help="local corpus directory")
     parser.add_argument("--name", required=True, choices=sorted(CORPORA), help="corpus key")
     parser.add_argument("--version", default=CORPUS_VERSION)
     parser.add_argument("--generator", default="", help="tool + version that produced it")
-    parser.add_argument("--gcs-only", action="store_true")
-    parser.add_argument("--s3-only", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
@@ -100,15 +82,8 @@ def main() -> int:
         print(f"wrote {manifest.write(source, built)}")
 
     gcs = f"{GCS_PREFIX}/{args.version}/{args.name}"
-    s3 = f"{S3_CORPUS_PREFIX}/{args.version}/{args.name}/"
-
-    if not args.s3_only:
-        push_gcs(source, gcs, args.dry_run)
-        print(f"published → {gcs}")
-    if not args.gcs_only:
-        push_s3(source, s3, args.dry_run)
-        print(f"mirrored  → {s3}")
-
+    push_gcs(source, gcs, args.dry_run)
+    print(f"published → {gcs}")
     return 0
 
 
