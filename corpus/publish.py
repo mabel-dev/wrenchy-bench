@@ -48,7 +48,7 @@ def _require(tool: str, hint: str) -> str:
     return path
 
 
-def push_s3(source: str, destination: str, dry_run: bool) -> None:
+def push_s3(source: str, destination: str, dry_run: bool = False) -> None:
     _require("aws", "install the AWS CLI")
     argv = ["aws", "s3", "sync", "--only-show-errors", f"{source}/", destination]
     if dry_run:
@@ -56,7 +56,7 @@ def push_s3(source: str, destination: str, dry_run: bool) -> None:
     subprocess.run(argv, check=True)
 
 
-def push_gcs(source: str, destination: str, dry_run: bool) -> None:
+def push_gcs(source: str, destination: str, dry_run: bool = False) -> None:
     _require("gcloud", "install the Google Cloud CLI")
     argv = ["gcloud", "storage", "rsync", "--recursive", source, destination]
     if dry_run:
@@ -88,6 +88,21 @@ def main() -> int:
         f"codec {built.codec}, {built.listing_sha256[:16]}…"
     )
 
+    # A corpus missing tables is a partial build that a size check will not see
+    # — see the `tables` note in config.py.
+    if corpus.tables:
+        found = sorted(
+            entry for entry in os.listdir(source)
+            if os.path.isdir(os.path.join(source, entry))
+        )
+        if len(found) != corpus.tables:
+            print(
+                f"refusing to publish: {args.name} has {len(found)} tables, expected "
+                f"{corpus.tables}. Found: {', '.join(found) or '(none)'}",
+                file=sys.stderr,
+            )
+            return 1
+
     # A corpus an order of magnitude off its declared size is a partial build,
     # not a small one. Publishing it would put a plausible number on a fraction
     # of a dataset, which is the failure mode manifests exist to prevent.
@@ -105,12 +120,19 @@ def main() -> int:
         print(f"wrote {manifest.write(source, built)}")
 
     s3 = f"{S3_CORPUS_PREFIX}/{args.version}/{args.name}/"
-    push_s3(source, s3, args.dry_run)
+    gcs = f"{GCS_PREFIX}/{args.version}/{args.name}"
+
+    if args.dry_run:
+        print(f"dry run — validated only, nothing written\n  would publish → {s3}")
+        if args.also_gcs:
+            print(f"  would write engine copy → {gcs}")
+        return 0
+
+    push_s3(source, s3, False)
     print(f"published → {s3}")
 
     if args.also_gcs:
-        gcs = f"{GCS_PREFIX}/{args.version}/{args.name}"
-        push_gcs(source, gcs, args.dry_run)
+        push_gcs(source, gcs, False)
         print(f"engine copy → {gcs}")
 
     return 0

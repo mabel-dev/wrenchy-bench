@@ -65,21 +65,29 @@ class Corpus:
     dest: str  # path under the opteryx-core checkout
     codec: str
     approx_bytes: int
+    # Expected number of top-level tables. A size check alone does not catch a
+    # partial corpus: `testdata/tpch_1` shipped with lineitem and none of the
+    # other seven tables, and its mirror came out at 246MB — comfortably inside
+    # any tolerance around a declared ~300MB, while 20 of the 22 TPC-H queries
+    # would have failed on missing tables. The table count catches it exactly.
+    tables: int
 
 
 CORPORA = {
     c.name: c
     for c in (
-        Corpus("tpch_1_skene", "testdata/tpch_1_skene", "lz4", 300_000_000),
-        Corpus("tpch_10_skene", "testdata/tpch_10_skene", "lz4", 4_000_000_000),
-        Corpus("tpch_100_skene", "testdata/tpch_100_skene", "lz4", 40_000_000_000),
-        Corpus("job_skene", "testdata/job_skene", "lz4", 2_500_000_000),
+        Corpus("tpch_1_skene", "testdata/tpch_1_skene", "lz4", 405_000_000, tables=8),
+        Corpus("tpch_10_skene", "testdata/tpch_10_skene", "lz4", 4_000_000_000, tables=8),
+        Corpus("tpch_100_skene", "testdata/tpch_100_skene", "lz4", 40_000_000_000, tables=8),
+        Corpus("job_skene", "testdata/job_skene", "lz4", 2_100_000_000, tables=21),
         # medium (1e8 rows) only. `small` is 630MB, which sits entirely in page
         # cache on a 32GiB box and measures compute with storage removed — it
         # was the local default and is not carried into the suite.
-        Corpus("h2o_skene", "testdata/h2o_skene", "lz4", 7_000_000_000),
-        Corpus("hits_rugo_262k", "scratch/hits_rugo_262k", "zstd", 8_100_000_000),
-        Corpus("hits_skene", "scratch/hits_skene", "lz4", 14_000_000_000),
+        Corpus("h2o_skene", "testdata/h2o_skene", "lz4", 8_700_000_000, tables=5),
+        # ClickBench is a single wide table, so its files sit at the top level
+        # rather than under per-table directories.
+        Corpus("hits_rugo_262k", "scratch/hits_rugo_262k", "zstd", 8_100_000_000, tables=0),
+        Corpus("hits_skene", "scratch/hits_skene", "lz4", 15_300_000_000, tables=0),
     )
 }
 

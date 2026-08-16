@@ -29,6 +29,35 @@ sys.path.insert(0, os.path.dirname(HERE))
 from harness.config import SUITE_BY_ID  # noqa: E402
 from harness.probe import Probe  # noqa: E402
 
+
+def bind_engine(checkout: str):
+    """Import opteryx FROM THE CHECKOUT, and prove that is what happened.
+
+    ⛔ Without this the driver imports whatever `opteryx` is on the path — on a
+    developer machine that is the PyPI wheel in site-packages, not the tree
+    that was just compiled. The failure is not loud: the wrong engine resolves
+    `testdata.*` relative to its own location, so every query returns
+    EmptyDatasetError, and a machine that happened to have a *working*
+    installed copy would instead have produced a full set of plausible numbers
+    for an engine nobody was testing.
+
+    sys.path[0] is the SCRIPT's directory for a script invocation, never the
+    working directory, so running from inside the checkout is not enough.
+    """
+    checkout = os.path.abspath(checkout)
+    sys.path.insert(0, checkout)
+    import opteryx
+
+    resolved = os.path.abspath(opteryx.__file__)
+    if not resolved.startswith(checkout + os.sep):
+        raise RuntimeError(
+            f"opteryx resolved to {resolved}, which is outside the checkout at "
+            f"{checkout}. The suite would have measured a different engine than "
+            "the one it reports. Remove the installed copy from the environment, "
+            "or point --checkout at the tree that is actually on the path."
+        )
+    return opteryx
+
 QUERY_ROOT = os.path.join(os.path.dirname(HERE), "queries")
 
 # The 21 IMDB tables. Rewriting is scoped to the FROM clause and anchored on
@@ -187,7 +216,7 @@ def telemetry_columns(readings: dict) -> dict:
 # --------------------------------------------------------------------------
 
 
-def run_one(sql: str, timeout_s: float) -> dict:
+def run_one(opteryx, sql: str, timeout_s: float) -> dict:
     """Run one query to completion, or until the deadline.
 
     The timeout is enforced between morsels: it bounds the drain loop, and
@@ -195,8 +224,6 @@ def run_one(sql: str, timeout_s: float) -> dict:
     it can do — a query reported as `timeout` genuinely exceeded the budget,
     and one reported `ok` genuinely finished.
     """
-    import opteryx
-
     gc.collect()
     session = opteryx.session()
     deadline = time.monotonic() + timeout_s
@@ -263,11 +290,13 @@ def blank_engine_telemetry() -> dict:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run one benchmark line")
     parser.add_argument("--line", required=True, choices=sorted(SUITE_BY_ID))
+    parser.add_argument("--checkout", required=True, help="opteryx-core checkout to import from")
     parser.add_argument("--run", required=True, help="JSON run context (run_id, engine_version, …)")
     parser.add_argument("--out", required=True, help="JSONL destination")
     parser.add_argument("--filter", default=None, help="regex over query names")
     args = parser.parse_args()
 
+    opteryx = bind_engine(args.checkout)
     line = SUITE_BY_ID[args.line]
     run = json.loads(args.run)
     queries = load_queries(line)
@@ -292,14 +321,15 @@ def main() -> int:
 
     print(
         f"{line.label}: {len(queries)} queries x {line.iterations} iterations, "
-        f"{line.timeout_s:.0f}s timeout",
+        f"{line.timeout_s:.0f}s timeout\n"
+        f"  engine: {opteryx.__version__}+{opteryx.__build__} from {opteryx.__file__}",
         file=sys.stderr,
     )
 
     with open(args.out, "w") as sink:
         for ordinal, (name, sql) in enumerate(queries, start=1):
             for iteration in range(1, line.iterations + 1):
-                result = run_one(sql, line.timeout_s)
+                result = run_one(opteryx, sql, line.timeout_s)
                 record = dict(base)
                 record.update(
                     query=name,

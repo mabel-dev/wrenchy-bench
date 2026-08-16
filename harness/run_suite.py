@@ -81,13 +81,25 @@ def drop_page_cache() -> bool:
 
 
 def engine_identity(checkout: str, python: str) -> dict:
+    # `sys.path.insert(0, checkout)` and not merely cwd=checkout: a `-c`
+    # invocation puts the working directory on the path, but the driver runs as
+    # a script and does not, so the two would disagree about which engine is
+    # under test. Both bind the same way and both assert the result.
     identity = _sh(
-        [python, "-c", "import opteryx; print(opteryx.__version__); print(opteryx.__build__)"],
+        [
+            python,
+            "-c",
+            f"import sys; sys.path.insert(0, {checkout!r}); import opteryx, os; "
+            f"assert os.path.abspath(opteryx.__file__).startswith({checkout!r}), opteryx.__file__; "
+            "print(opteryx.__version__); print(opteryx.__build__)",
+        ],
         cwd=checkout,
     ).splitlines()
     if len(identity) != 2:
         raise RuntimeError(
-            f"could not read opteryx version/build from {checkout} — is the engine compiled?"
+            f"could not read opteryx version/build from the checkout at {checkout} — "
+            "is the engine compiled (`make compile`), and is the checkout the copy "
+            "on the path?"
         )
     return {
         "engine_version": identity[0],
@@ -144,6 +156,7 @@ def run_line(line, checkout: str, out_dir: str, env: dict, run: dict, python: st
         python,
         os.path.join(HARNESS, "bench_runner.py"),
         "--line", line.id,
+        "--checkout", checkout,
         "--run", json.dumps(run),
         "--out", jsonl,
     ]
