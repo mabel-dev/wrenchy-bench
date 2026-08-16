@@ -105,6 +105,32 @@ def _post(url: str, body: dict | None, token: str | None = None) -> dict:
         return json.loads(response.read() or b"{}")
 
 
+def resolve_credentials(secret: str, default_client_id: str) -> tuple[str, str]:
+    """Get (client_id, client_secret) out of the Secrets Manager string.
+
+    The stored secret is documented as "client_id/client_secret" but may hold
+    either the pair as JSON or the bare PAT, and the two are indistinguishable
+    without looking. Rather than assume, accept both and SAY which was found —
+    the shape is printed, the value never is. A JSON object missing the keys we
+    need is an error, not a bare-PAT fallback: silently treating a malformed
+    pair as a token would fail later at the auth boundary, where it would read
+    as bad credentials.
+    """
+    stripped = secret.strip()
+    if stripped.startswith("{"):
+        parsed = json.loads(stripped)
+        missing = {"client_id", "client_secret"} - set(parsed)
+        if missing:
+            raise ValueError(
+                f"credential JSON is missing {sorted(missing)}; found keys {sorted(parsed)}"
+            )
+        print(f"credentials: JSON pair, client_id={parsed['client_id']}")
+        return parsed["client_id"], parsed["client_secret"]
+
+    print(f"credentials: bare PAT, client_id={default_client_id} (from OPTERYX_CLIENT_ID)")
+    return default_client_id, stripped
+
+
 def get_token(client_id: str, client_secret: str) -> str:
     """Exchange a client_id + PAT for an access token.
 
@@ -191,7 +217,10 @@ def main() -> int:
             print(f"wrote {path} ({len(blob) / 1024:.0f} KB)")
         return 0
 
-    token = get_token(os.environ["OPTERYX_CLIENT_ID"], os.environ["OPTERYX_CLIENT_SECRET"])
+    client_id, client_secret = resolve_credentials(
+        os.environ["OPTERYX_CREDENTIALS"], os.environ.get("OPTERYX_CLIENT_ID", "xb500")
+    )
+    token = get_token(client_id, client_secret)
     message = f"weekly bench {run['run_id']} ({run['engine_version']}+{run['engine_build']})"
 
     for dataset, blob in ((TABLE_QUERIES, queries_blob), (TABLE_RUNS, runs_blob)):

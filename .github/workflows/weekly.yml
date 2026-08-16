@@ -109,7 +109,7 @@ jobs:
           SECRET=$(aws secretsmanager get-secret-value \
             --secret-id "$OPTERYX_PAT_SECRET" --query SecretString --output text)
           echo "::add-mask::$SECRET"
-          OPTERYX_CLIENT_SECRET="$SECRET" python harness/publish.py --bundle bundle
+          OPTERYX_CREDENTIALS="$SECRET" python harness/publish.py --bundle bundle
 
       - name: Commit the run to the site
         run: |
