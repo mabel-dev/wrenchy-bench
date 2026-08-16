@@ -19,3 +19,9 @@ variable "github_repo" {
   type        = string
   default     = "mabel-dev/wrenchy-bench"
 }
+
+variable "opteryx_pat_secret_arn" {
+  description = "Secrets Manager ARN holding the Opteryx PAT used to publish results. Value is set out of band; terraform only grants read."
+  type        = string
+  default     = "arn:aws:secretsmanager:us-east-1:045121776141:secret:ichnos/opteryx-pat-QTY6jO"
+}

@@ -180,6 +180,14 @@ resource "aws_iam_role_policy" "actions" {
         Resource = aws_iam_role.instance.arn
       },
       {
+        # The platform credential used to commit results into
+        # opteryx.telemetry.*. Read from Secrets Manager rather than duplicated
+        # as a GitHub secret so the PAT has one home and one rotation.
+        Effect   = "Allow"
+        Action   = "secretsmanager:GetSecretValue"
+        Resource = var.opteryx_pat_secret_arn
+      },
+      {
         # The per-instance 8h kill-switch. Scoped to this project's alarm name
         # so the workflow cannot touch any other alarm in the account.
         Effect   = "Allow"

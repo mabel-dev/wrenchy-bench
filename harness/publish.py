@@ -13,6 +13,12 @@ The upload path is the public service: POST /v1/upload/session, PUT each part
 (30MB ceiling), POST /commit with the target table and APPEND. It needs a
 client-credential pair and nothing else — the in-process catalog route would
 mean putting Firestore and GCS keys into CI.
+
+Credentials are a client_id and a PAT, where the PAT IS the client_secret —
+authenticate.opteryx.app's token endpoint verifies a PAT first and falls back
+to the legacy client record, so both take the same shape. The workflow reads
+them from AWS Secrets Manager rather than from GitHub secrets, so the platform
+credential has one home and rotating it there is enough.
 """
 
 from __future__ import annotations
@@ -21,6 +27,7 @@ import argparse
 import json
 import os
 import sys
+import urllib.parse
 import urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -99,15 +106,24 @@ def _post(url: str, body: dict | None, token: str | None = None) -> dict:
 
 
 def get_token(client_id: str, client_secret: str) -> str:
-    payload = _post(
-        AUTH_URL,
+    """Exchange a client_id + PAT for an access token.
+
+    FORM-ENCODED, not JSON. The token endpoint declares its parameters as
+    FastAPI `Form(...)`, so a JSON body is rejected with 422 no matter how
+    correct the credentials are — the failure looks like an auth problem and
+    is not one.
+    """
+    body = urllib.parse.urlencode(
         {
             "grant_type": "client_credentials",
             "client_id": client_id,
             "client_secret": client_secret,
-        },
-    )
-    return payload["access_token"]
+        }
+    ).encode()
+    request = urllib.request.Request(AUTH_URL, data=body, method="POST")
+    request.add_header("Content-Type", "application/x-www-form-urlencoded")
+    with urllib.request.urlopen(request, timeout=120) as response:
+        return json.loads(response.read())["access_token"]
 
 
 def upload_table(token: str, dataset: str, blob: bytes, message: str) -> dict:

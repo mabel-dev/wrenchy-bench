@@ -27,6 +27,13 @@ concurrency:
 
 env:
   AWS_REGION: us-east-1
+  # Not a secret. A role ARN is an identifier, not a credential — the OIDC
+  # trust policy is what restricts it, and that is scoped to
+  # `repo:mabel-dev/wrenchy-bench:*`. Keeping it in the workflow means one
+  # fewer thing to configure by hand and one fewer thing to get wrong.
+  AWS_BENCH_ROLE_ARN: arn:aws:iam::045121776141:role/opteryx-bench-actions
+  OPTERYX_PAT_SECRET: ichnos/opteryx-pat
+  OPTERYX_CLIENT_ID: xb500
   CORPUS_PREFIX: s3://opteryx-bench-corpora/v2026-08
   RESULTS_BUCKET: s3://opteryx-bench-results
 
@@ -44,7 +51,7 @@ jobs:
 
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_BENCH_ROLE_ARN }}
+          role-to-assume: ${{ env.AWS_BENCH_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - id: start
@@ -72,7 +79,7 @@ jobs:
 
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_BENCH_ROLE_ARN }}
+          role-to-assume: ${{ env.AWS_BENCH_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Wait for the run bundle
@@ -95,12 +102,14 @@ jobs:
         # must not depend on the thing it measures: a platform outage costs a
         # table commit, not a week of history.
         continue-on-error: true
-        env:
-          OPTERYX_CLIENT_ID: ${{ secrets.OPTERYX_CLIENT_ID }}
-          OPTERYX_CLIENT_SECRET: ${{ secrets.OPTERYX_CLIENT_SECRET }}
         run: |
           pip install --quiet rugo
-          python harness/publish.py --bundle bundle
+          # The PAT is the client_secret. Read from Secrets Manager, masked
+          # before it can reach a log line, and never written to disk.
+          SECRET=$(aws secretsmanager get-secret-value \
+            --secret-id "$OPTERYX_PAT_SECRET" --query SecretString --output text)
+          echo "::add-mask::$SECRET"
+          OPTERYX_CLIENT_SECRET="$SECRET" python harness/publish.py --bundle bundle
 
       - name: Commit the run to the site
         run: |
