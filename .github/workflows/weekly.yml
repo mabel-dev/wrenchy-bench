@@ -1,0 +1,129 @@
+name: weekly benchmark
+
+# The control plane. Launches the box, waits for the bundle, then does
+# everything else here — comparison, publishing to opteryx.telemetry, the site.
+# The instance holds no GitHub or Opteryx credentials; it only writes S3.
+
+on:
+  schedule:
+    - cron: "0 2 * * 0" # Sundays 02:00 UTC
+  workflow_dispatch:
+    inputs:
+      engine_ref:
+        description: "opteryx-core ref to build and measure"
+        default: main
+      instance_type:
+        description: "instance type (c8gd.4xlarge for local NVMe)"
+        default: c8g.4xlarge
+
+permissions:
+  contents: write
+  id-token: write # OIDC to AWS; no long-lived keys in the repo
+  pull-requests: write
+
+concurrency:
+  group: weekly-benchmark
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-1
+  CORPUS_PREFIX: s3://opteryx-bench-corpora/v2026-08
+  RESULTS_BUCKET: s3://opteryx-bench-results
+
+jobs:
+  launch:
+    runs-on: ubuntu-latest
+    outputs:
+      run_id: ${{ steps.plan.outputs.run_id }}
+      instance_id: ${{ steps.start.outputs.instance_id }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: plan
+        run: echo "run_id=$(date -u +%Y-%m-%dT%H:%MZ)" >> "$GITHUB_OUTPUT"
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_BENCH_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - id: start
+        name: Launch the benchmark instance
+        env:
+          RUN_ID: ${{ steps.plan.outputs.run_id }}
+          ENGINE_REF: ${{ inputs.engine_ref || 'main' }}
+          INSTANCE_TYPE: ${{ inputs.instance_type || 'c8g.4xlarge' }}
+        run: bash infra/launch.sh
+
+  collect:
+    # Split from launch so the 6-hour GitHub job ceiling is never the thing
+    # that decides whether a run counts. This job does nothing but wait, and if
+    # it is cancelled the instance still finishes and still writes its bundle —
+    # re-run `collect` alone and the results are picked up.
+    needs: launch
+    runs-on: ubuntu-latest
+    timeout-minutes: 480
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_BENCH_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Wait for the run bundle
+        env:
+          RUN_ID: ${{ needs.launch.outputs.run_id }}
+        run: bash infra/wait-for-run.sh
+
+      - name: Download the bundle
+        env:
+          RUN_ID: ${{ needs.launch.outputs.run_id }}
+        run: aws s3 sync "${RESULTS_BUCKET}/runs/${RUN_ID}/" bundle/
+
+      - id: report
+        name: Compare against history and build the site data
+        continue-on-error: true # findings set a non-zero exit; that is data, not a broken job
+        run: python harness/report.py --bundle bundle --site-data site/data
+
+      - name: Publish to opteryx.telemetry
+        # Runs after the site data is written and never gates it. The suite
+        # must not depend on the thing it measures: a platform outage costs a
+        # table commit, not a week of history.
+        continue-on-error: true
+        env:
+          OPTERYX_CLIENT_ID: ${{ secrets.OPTERYX_CLIENT_ID }}
+          OPTERYX_CLIENT_SECRET: ${{ secrets.OPTERYX_CLIENT_SECRET }}
+        run: |
+          pip install --quiet rugo
+          python harness/publish.py --bundle bundle
+
+      - name: Commit the run to the site
+        run: |
+          git config user.name  "opteryx-bench"
+          git config user.email "bench@opteryx.app"
+          git add site/data
+          git diff --quiet --cached || git commit -m "bench: ${{ needs.launch.outputs.run_id }}"
+          git push
+
+      - name: Raise an issue on a hard failure
+        if: steps.report.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create \
+            --title "Benchmark regression · ${{ needs.launch.outputs.run_id }}" \
+            --body-file bundle/REPORT.md \
+            --label benchmark
+
+      - name: Terminate the instance if it is still alive
+        # The instance self-terminates and has its own watchdog; this is the
+        # backstop for the case where it died before reaching either.
+        if: always()
+        run: |
+          aws ec2 terminate-instances \
+            --instance-ids "${{ needs.launch.outputs.instance_id }}" 2>/dev/null || true

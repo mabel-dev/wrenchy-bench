@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wrenchy Bench</title>
+<style>
+  :root {
+    --ground:#F4F6F4; --surface:#FFF; --sunken:#EAEEEB;
+    --ink:#111715; --ink-soft:#4B5551; --muted:#6E7873;
+    --rule:#D6DDD8; --rule-firm:#B9C4BE;
+    --accent:#14655A; --signal:#9B6410; --alarm:#9E352C; --ok:#3D6B2E;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    --serif: ui-serif, "Iowan Old Style", Charter, Georgia, serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground:#0D110F; --surface:#151B18; --sunken:#1B221F;
+      --ink:#E4EAE6; --ink-soft:#B3BDB8; --muted:#8B9791;
+      --rule:#26302C; --rule-firm:#3A4741;
+      --accent:#57B5A2; --signal:#D3A055; --alarm:#DC8177; --ok:#86BC6E;
+    }
+  }
+  * { box-sizing:border-box; }
+  body {
+    background:var(--ground); color:var(--ink); font-family:var(--serif);
+    margin:0; padding:0 24px 80px; line-height:1.6; -webkit-font-smoothing:antialiased;
+  }
+  .wrap { max-width:1000px; margin:0 auto; }
+  header { padding:56px 0 22px; border-bottom:2px solid var(--ink); }
+  h1 { font-family:var(--mono); font-size:clamp(26px,4vw,38px); font-weight:600;
+       letter-spacing:-0.025em; margin:0 0 10px; }
+  .sub { color:var(--ink-soft); margin:0; max-width:62ch; }
+  h2 { font-family:var(--mono); font-size:12px; letter-spacing:0.15em; text-transform:uppercase;
+       margin:52px 0 0; padding-bottom:9px; border-bottom:1px solid var(--rule-firm); }
+
+  .headline { display:flex; flex-wrap:wrap; gap:0; border-bottom:1px solid var(--rule);
+              padding-bottom:20px; margin-bottom:8px; }
+  .headline div { padding:18px 24px 0 0; margin-right:24px; border-right:1px solid var(--rule); min-width:130px; }
+  .headline div:last-child { border-right:0; }
+  .headline dt { font-family:var(--mono); font-size:10px; letter-spacing:0.13em;
+                 text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
+  .headline dd { font-family:var(--mono); font-size:15px; margin:0; font-variant-numeric:tabular-nums; }
+
+  .scroller { overflow-x:auto; border:1px solid var(--rule); background:var(--surface); margin:22px 0; }
+  table { border-collapse:collapse; width:100%; font-family:var(--mono); font-size:13px; }
+  th { text-align:left; font-size:10px; letter-spacing:0.1em; text-transform:uppercase;
+       color:var(--muted); padding:11px 13px; border-bottom:1px solid var(--rule-firm); white-space:nowrap; }
+  td { padding:10px 13px; border-bottom:1px solid var(--rule); color:var(--ink-soft); white-space:nowrap; }
+  tbody tr:last-child td { border-bottom:0; }
+  td.k { color:var(--ink); font-weight:600; }
+  td.n { text-align:right; font-variant-numeric:tabular-nums; }
+
+  .chip { display:inline-block; font-family:var(--mono); font-size:10px; letter-spacing:0.06em;
+          text-transform:uppercase; padding:2px 7px; border-radius:2px; }
+  .ok      { background:color-mix(in srgb, var(--ok) 15%, transparent);      color:var(--ok); }
+  .suspect { background:color-mix(in srgb, var(--signal) 18%, transparent);  color:var(--signal); }
+  .failed  { background:color-mix(in srgb, var(--alarm) 15%, transparent);   color:var(--alarm); }
+
+  .delta-up   { color:var(--alarm); }
+  .delta-down { color:var(--ok); }
+  .spark { display:block; }
+  .empty { font-family:var(--mono); font-size:13px; color:var(--muted); padding:36px 0; }
+  footer { margin-top:56px; padding-top:18px; border-top:2px solid var(--ink);
+           font-family:var(--mono); font-size:11px; color:var(--muted); }
+  a { color:var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Wrenchy Bench</h1>
+  <p class="sub">Seven workloads on a c8g.4xlarge, weekly. Times are the minimum across iterations,
+  over queries that ran clean — an unstable query had the machine move under it, so its minimum
+  measures the machine and is excluded.</p>
+</header>
+
+<div id="app"><p class="empty">Loading…</p></div>
+
+<footer>
+  Raw bundles in S3 · full telemetry in <code>opteryx.telemetry.benchmarks</code> ·
+  <a href="https://github.com/mabel-dev/wrenchy-bench">source</a>
+</footer>
+
+</div>
+
+<script>
+const fmt = {
+  secs: ms => ms == null ? "—" : (ms / 1000).toFixed(2) + "s",
+  gb:   b  => b  == null ? "—" : (b / 1e9).toFixed(1) + " GB",
+  pct:  x  => (x * 100).toFixed(1) + "%",
+};
+
+// A single-path sparkline. Deliberately hand-drawn rather than pulled from a
+// chart library: the page has to work offline from a static file, and one
+// polyline is not worth a dependency.
+function spark(values, w = 108, h = 26) {
+  const clean = values.filter(v => v != null);
+  if (clean.length < 2) return "";
+  const lo = Math.min(...clean), hi = Math.max(...clean);
+  const span = hi - lo || 1;
+  const step = w / (values.length - 1);
+  const points = values.map((v, i) =>
+    v == null ? null : `${(i * step).toFixed(1)},${(h - ((v - lo) / span) * (h - 4) - 2).toFixed(1)}`
+  ).filter(Boolean).join(" ");
+  const last = clean[clean.length - 1];
+  const lastX = w, lastY = h - ((last - lo) / span) * (h - 4) - 2;
+  return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true">
+    <polyline points="${points}" fill="none" stroke="var(--accent)" stroke-width="1.25"
+      stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="2" fill="var(--accent)"/>
+  </svg>`;
+}
+
+function delta(now, before) {
+  if (now == null || before == null || !before) return "—";
+  const ratio = now / before - 1;
+  if (Math.abs(ratio) < 0.01) return "·";
+  const cls = ratio > 0 ? "delta-up" : "delta-down";
+  return `<span class="${cls}">${ratio > 0 ? "+" : ""}${fmt.pct(ratio)}</span>`;
+}
+
+function render(index) {
+  const app = document.getElementById("app");
+  if (!index.length) {
+    app.innerHTML = `<p class="empty">No runs recorded yet.</p>`;
+    return;
+  }
+
+  // index.json is newest first; trends read oldest to newest.
+  const latest = index[0];
+  const previous = index[1];
+  const history = [...index].reverse();
+  const lines = Object.keys(latest.totals);
+
+  const headline = `
+    <dl class="headline">
+      <div><dt>Latest run</dt><dd>${latest.run_id}</dd></div>
+      <div><dt>Status</dt><dd><span class="chip ${latest.status}">${latest.status}</span></dd></div>
+      <div><dt>Engine</dt><dd>${latest.engine_version}+${latest.engine_build}</dd></div>
+      <div><dt>Runs recorded</dt><dd>${index.length}</dd></div>
+    </dl>`;
+
+  const rows = lines.map(line => {
+    const total = latest.totals[line];
+    const series = history.map(run => run.totals[line]?.sum_min_ms ?? null);
+    const before = previous?.totals[line]?.sum_min_ms;
+    const failures = total.timeout + total.error;
+    return `<tr>
+      <td class="k">${line}</td>
+      <td class="n">${fmt.secs(total.sum_min_ms)}</td>
+      <td class="n">${delta(total.sum_min_ms, before)}</td>
+      <td>${spark(series)}</td>
+      <td class="n">${total.ok}/${total.queries}</td>
+      <td class="n">${failures ? `<span class="delta-up">${failures}</span>` : "—"}</td>
+      <td class="n">${total.unstable || "—"}</td>
+      <td class="n">${fmt.gb(total.peak_rss_bytes)}</td>
+    </tr>`;
+  }).join("");
+
+  const runRows = index.slice(0, 20).map(run => {
+    const suite = Object.values(run.totals).reduce((sum, t) => sum + (t.sum_min_ms || 0), 0);
+    return `<tr>
+      <td class="k">${run.run_id}</td>
+      <td><span class="chip ${run.status}">${run.status}</span></td>
+      <td>${run.engine_version}+${run.engine_build}</td>
+      <td class="n">${fmt.secs(suite)}</td>
+    </tr>`;
+  }).join("");
+
+  app.innerHTML = `
+    ${headline}
+    <h2>By line</h2>
+    <div class="scroller"><table>
+      <thead><tr>
+        <th>Line</th><th>Σ min</th><th>vs prev</th><th>trend</th>
+        <th>ok</th><th>failed</th><th>unstable</th><th>peak RSS</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+    <h2>Runs</h2>
+    <div class="scroller"><table>
+      <thead><tr><th>Run</th><th>Status</th><th>Engine</th><th>Suite Σ min</th></tr></thead>
+      <tbody>${runRows}</tbody>
+    </table></div>`;
+}
+
+fetch("data/index.json")
+  .then(response => response.ok ? response.json() : [])
+  .then(render)
+  .catch(() => {
+    document.getElementById("app").innerHTML =
+      `<p class="empty">Could not load data/index.json.</p>`;
+  });
+</script>
+</body>
+</html>
