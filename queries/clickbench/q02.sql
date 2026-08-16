@@ -1,0 +1,1 @@
+SELECT COUNT(*) FROM {DATASET} WHERE AdvEngineID <> 0;

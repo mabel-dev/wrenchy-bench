@@ -5,7 +5,7 @@
 #
 #   ENGINE_REF      git ref of opteryx-core to build and measure
 #   HARNESS_REF     git ref of this repo
-#   CORPUS_PREFIX   s3://…/v2026-08
+#   CORPUS_PREFIX   s3://opteryx-bench-corpora/v2026-08
 #   RESULTS_BUCKET  s3://…
 #   RUN_ID          the run identifier the Action is waiting on
 #
@@ -50,6 +50,7 @@ on_error() {
 trap on_error ERR
 
 echo "=== weekly bench ${RUN_ID} · engine ${ENGINE_REF} · harness ${HARNESS_REF}"
+mkdir -p "${WORK}"
 
 # ---------------------------------------------------------------------------
 # Toolchain
@@ -70,7 +71,7 @@ export PATH="${HOME}/.local/bin:${PATH}"
 # threads under a released GIL — 3.14t here would silently change what is
 # being measured.
 uv python install 3.14
-mkdir -p "${WORK}" && cd "${WORK}"
+cd "${WORK}"
 uv venv --python 3.14 .venv
 # shellcheck source=/dev/null
 source .venv/bin/activate
@@ -103,11 +104,19 @@ sync_corpus() {
     aws s3 sync --only-show-errors "${CORPUS_PREFIX}/${name}/" "${dest}/"
 }
 
+# Six Skene mirrors and one parquet corpus — ClickBench-parquet is a suite line
+# in its own right. JOB and H2O are Skene too: upstream ships rows, not files,
+# so the format was always this harness's choice and is made once, everywhere.
+#
+# Read from S3 in this region, where the transfer is free. The same bytes also
+# exist in GCS so the engine can query them as datasets (Opteryx has a GCS
+# filesystem and no S3 one), but the runner never reads that copy: GCS egress
+# to EC2 would be ~$9 a run, more than the compute it feeds.
 sync_corpus tpch_1_skene   "${WORK}/opteryx-core/testdata/tpch_1_skene"
 sync_corpus tpch_10_skene  "${WORK}/opteryx-core/testdata/tpch_10_skene"
 sync_corpus tpch_100_skene "${WORK}/opteryx-core/testdata/tpch_100_skene"
-sync_corpus job            "${WORK}/opteryx-core/testdata/job"
-sync_corpus h2o            "${WORK}/opteryx-core/testdata/h2o"
+sync_corpus job_skene      "${WORK}/opteryx-core/testdata/job_skene"
+sync_corpus h2o_skene      "${WORK}/opteryx-core/testdata/h2o_skene"
 sync_corpus hits_rugo_262k "${WORK}/opteryx-core/scratch/hits_rugo_262k"
 sync_corpus hits_skene     "${WORK}/opteryx-core/scratch/hits_skene"
 

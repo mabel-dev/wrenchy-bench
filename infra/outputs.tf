@@ -4,7 +4,7 @@ output "actions_role_arn" {
 }
 
 output "corpus_prefix" {
-  description = "Set as CORPUS_PREFIX in the workflow; the version suffix is appended by hand on a corpus rebuild"
+  description = "Set as CORPUS_PREFIX in the workflow, with the version suffix appended"
   value       = "s3://${aws_s3_bucket.corpora.id}"
 }
 

@@ -1,0 +1,1 @@
+SELECT REGEXP_REPLACE(Referer, b'^https?://(?:www\.)?([^/]+)/.*$', r'\1') AS k, AVG(length(Referer)) AS l, COUNT(*) AS c, MIN(Referer) FROM {DATASET} WHERE Referer <> '' GROUP BY REGEXP_REPLACE(Referer, b'^https?://(?:www\.)?([^/]+)/.*$', r'\1') HAVING COUNT(*) > 100000 ORDER BY l DESC LIMIT 25;

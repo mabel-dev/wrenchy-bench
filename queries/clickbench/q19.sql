@@ -1,0 +1,1 @@
+SELECT UserID, extract(minute FROM EventTime::TIMESTAMP[s]) AS m, SearchPhrase, COUNT(*) FROM {DATASET} GROUP BY UserID, extract(minute FROM EventTime::TIMESTAMP[s]), SearchPhrase ORDER BY COUNT(*) DESC LIMIT 10;

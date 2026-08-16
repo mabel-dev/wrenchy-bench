@@ -33,9 +33,13 @@ locals {
 # Buckets
 # ---------------------------------------------------------------------------
 
-# Corpora: write-once, ~70GB, versioned by prefix (v2026-08/...). Versioning is
-# on because a corpus is the baseline every trend line is measured against — an
-# accidental overwrite would silently reinterpret months of history.
+# Corpora: write-once, ~76GB, versioned by prefix (v2026-08/...). In-region so
+# the runner's transfer is free. Versioning is on because a corpus is the
+# baseline every trend line is measured against — an accidental overwrite would
+# silently reinterpret months of history.
+#
+# The same bytes also live in GCS for engine reference (see harness/config.py);
+# that copy is written by the publisher, never read here.
 resource "aws_s3_bucket" "corpora" {
   bucket = "${local.name}-corpora"
   tags   = local.tags
@@ -46,19 +50,19 @@ resource "aws_s3_bucket_versioning" "corpora" {
   versioning_configuration { status = "Enabled" }
 }
 
-# Results: append-only, a few MB per run. No lifecycle expiry — the archive is
-# the system of record and must outlive anything in the telemetry tables.
-resource "aws_s3_bucket" "results" {
-  bucket = "${local.name}-results"
-  tags   = local.tags
-}
-
 resource "aws_s3_bucket_public_access_block" "corpora" {
   bucket                  = aws_s3_bucket.corpora.id
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
+}
+
+# Results: append-only, a few MB per run. No lifecycle expiry — the archive is
+# the system of record and must outlive anything in the telemetry tables.
+resource "aws_s3_bucket" "results" {
+  bucket = "${local.name}-results"
+  tags   = local.tags
 }
 
 resource "aws_s3_bucket_public_access_block" "results" {
@@ -176,6 +180,13 @@ resource "aws_iam_role_policy" "actions" {
         Resource = aws_iam_role.instance.arn
       },
       {
+        # The per-instance 8h kill-switch. Scoped to this project's alarm name
+        # so the workflow cannot touch any other alarm in the account.
+        Effect   = "Allow"
+        Action   = ["cloudwatch:PutMetricAlarm", "cloudwatch:DeleteAlarms"]
+        Resource = "arn:aws:cloudwatch:*:*:alarm:opteryx-bench-killswitch-*"
+      },
+      {
         # Terminate only what this project launched. A bug in the workflow must
         # not be able to reach anything else in the account.
         Effect   = "Allow"
@@ -246,21 +257,7 @@ resource "aws_sns_topic" "alerts" {
   tags = local.tags
 }
 
-resource "aws_cloudwatch_metric_alarm" "runaway" {
-  alarm_name          = "${local.name}-runaway-instance"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 1
-  threshold           = 0
-  period              = 3600
-  statistic           = "Maximum"
-  namespace           = "AWS/EC2"
-  metric_name         = "CPUUtilization"
-  treat_missing_data  = "notBreaching"
-  alarm_description   = "A wrenchy-bench instance is still running 9h after the weekly window opened"
-  alarm_actions       = [aws_sns_topic.alerts.arn]
-  tags                = local.tags
-
-  dimensions = {
-    InstanceId = "*"
-  }
-}
+# The 8h kill-switch is created per-instance at launch (infra/launch.sh) rather
+# than declared here: a static alarm cannot carry an InstanceId dimension for an
+# instance that does not exist yet, and a wildcard dimension matches nothing.
+# This topic remains for the collect job's failure notifications.

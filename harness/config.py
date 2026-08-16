@@ -1,17 +1,49 @@
-"""The suite definition: seven lines, their corpora, and how each is invoked.
+"""The suite definition: seven lines, their corpora, and how each is run.
 
-This module is the single place the suite is described. The bootstrap script,
-the corpus publisher, the normaliser and the site builder all read it, so a
-line cannot be added to the run without also being added to the corpus sync
-and the results schema.
+The single place the suite is described. The corpus publisher, the query
+driver, the run orchestrator and the reporter all read it, so a line cannot be
+added to the run without also being added to the corpus sync and the results
+schema.
 
-Deliberately stdlib-only and import-free of opteryx: it is read on the control
-side (corpus publishing, comparison) as well as on the benchmark box.
+Stdlib-only and import-free of opteryx: read on the control side (publishing,
+comparison, CI) as well as on the benchmark box.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+
+# --------------------------------------------------------------------------
+# Storage
+# --------------------------------------------------------------------------
+
+# S3, in the runner's own region, is where the corpora are read from.
+#
+# GCS to EC2 is internet egress at ~$0.12/GB: ~76GB a week is ~$9 a run, or
+# ~$40/month — more than the compute it feeds and more than everything else in
+# this system combined. S3 to EC2 in-region is free and 76GB of S3 Standard is
+# ~$1.75/month.
+S3_CORPUS_PREFIX = "s3://opteryx-bench-corpora"
+S3_RESULTS_PREFIX = "s3://opteryx-bench-results"
+
+# The optional engine-facing copy, written by `corpus/publish.py --also-gcs`.
+#
+# ⛔ It is not redundancy and not a fallback — the runner never reads it. It
+# exists only so the corpora are queryable as datasets, because Opteryx has a
+# GCS filesystem (opteryx/connectors/io_systems/gcs_filesystem.py) and NO S3
+# one. Without this copy the benchmark corpora cannot be referenced from the
+# engine at all. It costs ~$1.75/month in storage and no egress, since nothing
+# reads it on a schedule.
+GCS_BUCKET = "opteryx_data"
+GCS_PREFIX = f"gs://{GCS_BUCKET}/benchmarks"
+
+CORPUS_VERSION = "v2026-08"
+
+# Stock CPython, NOT the free-threaded build. Execution is native and already
+# runs with the GIL released, so 3.14t bought nothing; opteryx-core also stopped
+# publishing cp314t wheels after 0.9.16.
+PYTHON_VERSION = "3.14"
+
 
 # --------------------------------------------------------------------------
 # Corpora
@@ -22,30 +54,40 @@ from dataclasses import dataclass, field
 class Corpus:
     """A stored dataset, built once and synced read-only onto the box.
 
-    ``codec`` is carried here and never inferred at run time. The skene mirrors
-    are lz4 (WriteOptions::for_fast_reads, the local-benchmark posture) and the
-    parquet corpora are zstd/snappy (the storage posture). That asymmetry is a
-    standing decision, which means a skene number and a parquet number differ
-    by codec as well as by format — so the codec travels with every result row
-    and is printed beside every figure.
+    ``codec`` is carried here and never inferred at run time. Skene mirrors are
+    lz4 (WriteOptions::for_fast_reads, the local-benchmark posture); the
+    remaining parquet corpus is zstd (the storage posture). A skene number and
+    a parquet number therefore differ by codec as well as by format, so the
+    codec travels with every result row.
     """
 
     name: str
     dest: str  # path under the opteryx-core checkout
     codec: str
     approx_bytes: int
+    # Expected number of top-level tables. A size check alone does not catch a
+    # partial corpus: `testdata/tpch_1` shipped with lineitem and none of the
+    # other seven tables, and its mirror came out at 246MB — comfortably inside
+    # any tolerance around a declared ~300MB, while 20 of the 22 TPC-H queries
+    # would have failed on missing tables. The table count catches it exactly.
+    tables: int
 
 
 CORPORA = {
     c.name: c
     for c in (
-        Corpus("tpch_1_skene", "testdata/tpch_1_skene", "lz4", 300_000_000),
-        Corpus("tpch_10_skene", "testdata/tpch_10_skene", "lz4", 4_000_000_000),
-        Corpus("tpch_100_skene", "testdata/tpch_100_skene", "lz4", 40_000_000_000),
-        Corpus("job", "testdata/job", "snappy", 1_800_000_000),
-        Corpus("h2o", "testdata/h2o", "zstd", 5_000_000_000),
-        Corpus("hits_rugo_262k", "scratch/hits_rugo_262k", "zstd", 8_100_000_000),
-        Corpus("hits_skene", "scratch/hits_skene", "lz4", 14_000_000_000),
+        Corpus("tpch_1_skene", "testdata/tpch_1_skene", "lz4", 405_000_000, tables=8),
+        Corpus("tpch_10_skene", "testdata/tpch_10_skene", "lz4", 4_000_000_000, tables=8),
+        Corpus("tpch_100_skene", "testdata/tpch_100_skene", "lz4", 40_000_000_000, tables=8),
+        Corpus("job_skene", "testdata/job_skene", "lz4", 2_100_000_000, tables=21),
+        # medium (1e8 rows) only. `small` is 630MB, which sits entirely in page
+        # cache on a 32GiB box and measures compute with storage removed — it
+        # was the local default and is not carried into the suite.
+        Corpus("h2o_skene", "testdata/h2o_skene", "lz4", 8_700_000_000, tables=5),
+        # ClickBench is a single wide table, so its files sit at the top level
+        # rather than under per-table directories.
+        Corpus("hits_rugo_262k", "scratch/hits_rugo_262k", "zstd", 8_100_000_000, tables=0),
+        Corpus("hits_skene", "scratch/hits_skene", "lz4", 15_300_000_000, tables=0),
     )
 }
 
@@ -57,14 +99,7 @@ CORPORA = {
 
 @dataclass(frozen=True)
 class Line:
-    """One benchmark line in the weekly run.
-
-    ``argv`` is run from the opteryx-core checkout root with BENCH_PRELOAD in
-    the environment. We invoke the runners directly rather than through their
-    make targets because the make targets also *generate* corpora on a cache
-    miss — on this box a missing corpus must be a hard failure, never a
-    forty-minute silent rebuild in the middle of a timed run.
-    """
+    """One benchmark line. Driven by harness/bench_runner.py, one process each."""
 
     id: str
     label: str
@@ -72,21 +107,18 @@ class Line:
     scale_factor: str | None
     data_format: str  # skene | parquet
     corpus: str  # key into CORPORA
-    argv: list[str]
-    reader: str  # which adapter parses the output: tpch_csv | job_csv | h2o_csv | clickbench_json
-    results_dir: str | None = None  # runner-owned dir it drops a CSV into
-    json_out: bool = False  # runner writes JSON to a path we pass
-    extra_corpora: list[str] = field(default_factory=list)
+    relation: str  # dotted dataset name the queries are bound to
+    iterations: int
+    timeout_s: float
 
     @property
     def codec(self) -> str:
         return CORPORA[self.corpus].codec
 
+    @property
+    def dest(self) -> str:
+        return CORPORA[self.corpus].dest
 
-_TPCH = "tests/performance/tpch/runner.py"
-_JOB = "tests/performance/job/runner.py"
-_H2O = "tests/performance/h2o/runner.py"
-_CLICKBENCH = "tests/performance/clickbench/opteryx/runner.py"
 
 SUITE: list[Line] = [
     Line(
@@ -96,9 +128,9 @@ SUITE: list[Line] = [
         scale_factor="1",
         data_format="skene",
         corpus="tpch_1_skene",
-        argv=[_TPCH, "--scale", "1", "--variant", "skene"],
-        reader="tpch_csv",
-        results_dir="tests/performance/tpch/results",
+        relation="testdata.tpch_1_skene",
+        iterations=5,
+        timeout_s=300,
     ),
     Line(
         id="tpch_sf10_skene",
@@ -107,9 +139,9 @@ SUITE: list[Line] = [
         scale_factor="10",
         data_format="skene",
         corpus="tpch_10_skene",
-        argv=[_TPCH, "--scale", "10", "--variant", "skene"],
-        reader="tpch_csv",
-        results_dir="tests/performance/tpch/results",
+        relation="testdata.tpch_10_skene",
+        iterations=5,
+        timeout_s=300,
     ),
     Line(
         id="tpch_sf100_skene",
@@ -118,42 +150,37 @@ SUITE: list[Line] = [
         scale_factor="100",
         data_format="skene",
         corpus="tpch_100_skene",
-        argv=[_TPCH, "--scale", "100", "--variant", "skene"],
-        reader="tpch_csv",
-        results_dir="tests/performance/tpch/results",
+        relation="testdata.tpch_100_skene",
+        # 3 rather than 5: the corpus is 40GB and this is the longest line in
+        # the suite. Three still gives a minimum worth trusting.
+        iterations=3,
+        timeout_s=900,
     ),
     Line(
-        # JOB and H2O do not stipulate a storage format — upstream ships rows
-        # (CSV from CWI / datagen.R), not files. Parquet here is the harness's
-        # choice, so it is named explicitly rather than left implicit.
-        id="job_parquet",
-        label="JOB · Parquet",
+        id="job_skene",
+        label="JOB · Skene",
         benchmark="job",
         scale_factor=None,
-        data_format="parquet",
-        corpus="job",
-        # 60s, not the 300s default: 113 queries x 2 iterations x 300s is 18.8h
-        # worst case against a 4-5h budget. A query crossing 60s is a regression
-        # whether or not it would have finished at 300s, so the bound loses
-        # nothing the trend needs — but timeout_count is a headline metric so it
-        # can never hide one either.
-        argv=[_JOB, "--timeout", "60", "--iterations", "2"],
-        reader="job_csv",
-        results_dir="tests/performance/job/results",
+        data_format="skene",
+        corpus="job_skene",
+        relation="testdata.job_skene",
+        # JOB runs the whole 113-query suite in ~30s locally, so three
+        # iterations is minutes, not hours. The timeout exists to bound a
+        # pathological plan, not to fit the schedule: a JOB query crossing 120s
+        # is a regression regardless.
+        iterations=3,
+        timeout_s=120,
     ),
     Line(
-        id="h2o_parquet",
-        label="H2O · Parquet (medium)",
+        id="h2o_skene",
+        label="H2O · Skene (medium)",
         benchmark="h2o",
         scale_factor="medium",
-        data_format="parquet",
-        corpus="h2o",
-        # medium (1e8 rows, ~5GB) over the small default: 630MB sits entirely in
-        # page cache on a 32GiB box, which measures compute with the storage
-        # layer removed.
-        argv=[_H2O, "--workload", "both", "--size", "medium", "--timeout", "300"],
-        reader="h2o_csv",
-        results_dir="tests/performance/h2o/results",
+        data_format="skene",
+        corpus="h2o_skene",
+        relation="testdata.h2o_skene",
+        iterations=3,
+        timeout_s=300,
     ),
     Line(
         id="clickbench_parquet",
@@ -162,12 +189,9 @@ SUITE: list[Line] = [
         scale_factor=None,
         data_format="parquet",
         corpus="hits_rugo_262k",
-        # --variant parquet, NOT the bare default: as of 2026-08-16 the runner's
-        # VARIANT_DATASETS[""] resolves to the skene mirror, so an unqualified
-        # run benchmarks skene under the parquet line's name. See PREFLIGHT.md.
-        argv=[_CLICKBENCH, "--variant", "parquet", "--iterations", "5"],
-        reader="clickbench_json",
-        json_out=True,
+        relation="scratch.hits_rugo_262k",
+        iterations=5,
+        timeout_s=300,
     ),
     Line(
         id="clickbench_skene",
@@ -176,17 +200,17 @@ SUITE: list[Line] = [
         scale_factor=None,
         data_format="skene",
         corpus="hits_skene",
-        argv=[_CLICKBENCH, "--variant", "skene", "--iterations", "5"],
-        reader="clickbench_json",
-        json_out=True,
+        relation="scratch.hits_skene",
+        iterations=5,
+        timeout_s=300,
     ),
 ]
 
 SUITE_BY_ID = {line.id: line for line in SUITE}
 
-# The calibration bookend. Run first and last; a divergence beyond
-# CALIBRATION_TOLERANCE means the machine moved under the run and every number
-# in it is suspect. One minute at each end, on a line already in the suite.
+# The calibration bookend. Run first and last; a divergence beyond the
+# tolerance means the machine moved under the run, so every number in it is
+# suspect. About a minute at each end, on a line already in the suite.
 CALIBRATION_LINE = "tpch_sf1_skene"
 CALIBRATION_TOLERANCE = 0.10
 
@@ -195,9 +219,9 @@ REGRESSION_RATIO = 1.15  # vs trailing baseline, needs two consecutive runs
 IMMEDIATE_RATIO = 1.25  # reported on a single run
 BASELINE_RUNS = 4  # trailing non-suspect runs forming the baseline
 
-# A query whose per-round spread exceeds this fraction of its own minimum is
-# UNSTABLE: the machine moved under it, so its minimum is not a usable signal.
-# Matches the ClickBench runner's own threshold.
+# A query whose spread across iterations exceeds this fraction of its own
+# minimum is UNSTABLE: the machine moved under it, so its minimum measures the
+# machine rather than the engine.
 UNSTABLE_SPREAD = 0.45
 
 TELEMETRY_WORKSPACE = "opteryx"
