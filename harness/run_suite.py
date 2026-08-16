@@ -109,6 +109,25 @@ def engine_identity(python: str) -> dict:
     }
 
 
+def harness_identity() -> dict:
+    """Which version of THIS repo produced the run.
+
+    The box clones `main` fresh at every launch, so pushing is deploying — and
+    that makes the harness the one input to a number that was not being
+    recorded. It is not a minor one: this repo owns the queries, the iteration
+    counts, the timeouts, the dataset bindings and the driver itself, so a
+    harness change can move a number as far as an engine change can. Everything
+    else is pinned and recorded — engine version, corpus hashes, allocator,
+    kernel — and without this the suite could not say which of its own versions
+    measured what.
+    """
+    here = os.path.dirname(os.path.abspath(__file__))
+    return {
+        "harness_sha": _sh(["git", "rev-parse", "HEAD"], cwd=here) or None,
+        "harness_dirty": bool(_sh(["git", "status", "--porcelain"], cwd=here)),
+    }
+
+
 def verify_corpora(data_root: str, lines: list) -> dict:
     """Verify every corpus the run will read, before any of it runs."""
     hashes = {}
@@ -241,7 +260,7 @@ def main() -> int:
     corpus_hashes = verify_corpora(data_root, lines)
     facts = probe.host_facts()
 
-    run = {"run_id": run_id, "run_date": started.isoformat(), **identity}
+    run = {"run_id": run_id, "run_date": started.isoformat(), **identity, **harness_identity()}
 
     env = dict(os.environ)
     env.update(LD_PRELOAD=preload, MIMALLOC_PURGE_DELAY="100")
