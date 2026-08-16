@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.venv/
+bundle/
+*.parquet
+!site/data/**
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
