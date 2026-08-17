@@ -7,8 +7,8 @@ benchmarks sharing 16 vCPU measure each other.
 
 Everything it produces lands under --out:
 
-    manifest.json     run-level provenance -> opteryx.telemetry.benchmark_runs
-    results.jsonl     one record per query per iteration -> opteryx.telemetry.benchmarks
+    manifest.json     run-level provenance -> opteryx.benchmarks.benchmark_runs
+    results.jsonl     one record per query per iteration -> opteryx.benchmarks.telemetry
     raw/              each line's own JSONL, as the driver wrote it
     console/          per-line stderr
     STATUS            ok | suspect | failed, written last

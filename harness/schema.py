@@ -1,4 +1,4 @@
-"""The table contracts for opteryx.telemetry.*
+"""The table contracts for opteryx.benchmarks.*
 
 Pinned column order and types. These tables are append-only, so a widened
 schema cannot be undone without a rewrite — publishing raises rather than
@@ -15,7 +15,7 @@ counts and different lifetimes:
 from __future__ import annotations
 
 # --------------------------------------------------------------------------
-# opteryx.telemetry.benchmarks — one row per query per iteration
+# opteryx.benchmarks.telemetry — one row per query per iteration
 # --------------------------------------------------------------------------
 
 QUERY_COLUMNS: list[tuple[str, str]] = [
@@ -65,7 +65,7 @@ QUERY_COLUMNS: list[tuple[str, str]] = [
 ]
 
 # --------------------------------------------------------------------------
-# opteryx.telemetry.benchmark_runs — one row per run
+# opteryx.benchmarks.benchmark_runs — one row per run
 # --------------------------------------------------------------------------
 
 RUN_COLUMNS: list[tuple[str, str]] = [
@@ -108,7 +108,7 @@ RUN_COLUMNS: list[tuple[str, str]] = [
 ]
 
 # --------------------------------------------------------------------------
-# opteryx.telemetry.benchmark_operations — per-operator, tracing pass only
+# opteryx.benchmarks.benchmark_operations — per-operator, tracing pass only
 # --------------------------------------------------------------------------
 
 OPERATION_COLUMNS: list[tuple[str, str]] = [

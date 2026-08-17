@@ -1,7 +1,7 @@
 """Fold a run bundle into the committed history, detect regressions, write the site data.
 
 Deliberately compares against the JSON history committed in this repo rather
-than querying opteryx.telemetry.benchmarks. The suite must not depend on the
+than querying opteryx.benchmarks.telemetry. The suite must not depend on the
 thing it measures: the weeks you most want the numbers are exactly the weeks
 something is broken, and regression detection that stops working during an
 outage is not regression detection. The telemetry tables are the richer surface

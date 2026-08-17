@@ -235,7 +235,7 @@ BASELINE_RUNS = 4  # trailing non-suspect runs forming the baseline
 UNSTABLE_SPREAD = 0.45
 
 TELEMETRY_WORKSPACE = "opteryx"
-TELEMETRY_COLLECTION = "telemetry"
-TABLE_QUERIES = "benchmarks"
+TELEMETRY_COLLECTION = "benchmarks"
+TABLE_QUERIES = "telemetry"
 TABLE_RUNS = "benchmark_runs"
 TABLE_OPERATIONS = "benchmark_operations"

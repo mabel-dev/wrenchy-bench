@@ -1,4 +1,4 @@
-"""Turn a run bundle into Parquet and commit it to opteryx.telemetry.*
+"""Turn a run bundle into Parquet and commit it to opteryx.benchmarks.*
 
 Runs in GitHub Actions, not on the benchmark box: the box's only job is to
 produce numbers and put them in S3. Everything downstream — the schema, the
@@ -202,7 +202,7 @@ def upload_table(token: str, dataset: str, blob: bytes, message: str) -> dict:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Publish a run bundle to opteryx.telemetry")
+    parser = argparse.ArgumentParser(description="Publish a run bundle to opteryx.benchmarks")
     parser.add_argument("--bundle", required=True, help="directory holding manifest.json + results.jsonl")
     parser.add_argument("--dry-run", action="store_true", help="write parquet locally, do not upload")
     args = parser.parse_args()

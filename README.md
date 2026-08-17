@@ -3,7 +3,7 @@
 Weekly performance baselining for [Opteryx](https://github.com/mabel-dev/opteryx-core).
 
 Seven workloads, one `c8g.4xlarge`, once a week. Corpora are built once and
-stored, never regenerated. Results land in `opteryx.telemetry.benchmarks` and
+stored, never regenerated. Results land in `opteryx.benchmarks.telemetry` and
 on a [GitHub Pages site](https://mabel-dev.github.io/wrenchy-bench/).
 
 | Line | Format | Corpus | Queries | Iterations | Size |
@@ -64,7 +64,7 @@ EventBridge Scheduler, Sun 02:00 UTC
                                        find newest run, wait for STATUS
                                        compare against history
                                        commit site/data, deploy Pages
-                                       publish to opteryx.telemetry
+                                       publish to opteryx.benchmarks
 ```
 
 Collection is a separate schedule so a failed comparison can be re-run without
@@ -89,7 +89,7 @@ harness/
   run_suite.py    orchestrates the lines, writes the run bundle
   probe.py        peak RSS / CPU / block I/O — stdlib only
   manifest.py     corpus manifests: build at publish, verify before every run
-  schema.py       the opteryx.telemetry.* table contracts
+  schema.py       the opteryx.benchmarks.* table contracts
   report.py       regression detection and the site data
   publish.py      Parquet via rugo, committed through the upload service
 corpus/
