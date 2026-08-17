@@ -14,13 +14,26 @@
 # publishing and the site are all downstream in Actions, where they can be
 # re-run without paying for another four hours of EC2.
 
-set -Eeuo pipefail
+set -euo pipefail
+# Not -E (errtrace): the ERR trap this script used to carry did not fire for
+# the failure that actually happened on 2026-08-16 (see on_exit below), so
+# relying on ERR-trap inheritance into functions is not a real guarantee here
+# and it is honest to stop claiming it is.
 
 ENGINE_VERSION="${ENGINE_VERSION:-latest}"
 HARNESS_REF="${HARNESS_REF:-main}"
 CORPUS_PREFIX="${CORPUS_PREFIX:?}"
 RESULTS_BUCKET="${RESULTS_BUCKET:?}"
 RUN_ID="${RUN_ID:?}"
+
+# ⛔ HOME IS UNSET under cloud-init's user-data execution — it is not a login
+# shell, and nothing populates it. `export PATH="${HOME}/.local/bin:${PATH}"`
+# further down used to reference it bare and, under `set -u`, that is fatal:
+# the script died 34s into the 2026-08-16 22:37Z run, right after installing
+# uv, one line before anything would have used it. Set explicitly rather than
+# defaulted inline at each use site, since uv/git/pip all consult it for cache
+# and config directories too, not just that one PATH line.
+export HOME=/root
 
 WORK=/opt/bench
 DATA="${WORK}/data"
@@ -37,18 +50,62 @@ exec > >(tee -a "${LOG}") 2>&1
 # ---------------------------------------------------------------------------
 shutdown -h +420 "benchmark watchdog" &
 
-# Publish a failure marker if we exit anywhere unexpected. The Action is
-# polling for STATUS; without this a crashed run looks identical to a slow one
-# until the alarm fires hours later.
-on_error() {
-    local code=$?
-    echo "FAILED at line ${BASH_LINENO[0]} (exit ${code})"
-    echo "failed" > /tmp/STATUS
-    aws s3 cp /tmp/STATUS "${RESULTS_BUCKET}/runs/${RUN_ID}/STATUS" || true
-    aws s3 cp "${LOG}" "${RESULTS_BUCKET}/runs/${RUN_ID}/bootstrap.log" || true
+# ---------------------------------------------------------------------------
+# ONE handler, on EXIT, not ERR — covering success and failure alike.
+#
+# ⛔ THE PREVIOUS DESIGN USED AN ERR TRAP, AND IT DID NOT FIRE for the failure
+# that actually happened: `export PATH="${HOME}/..."` under `set -u` with HOME
+# unset aborts the shell via its own internal nounset-exit path, which is a
+# long-documented bash gotcha — it does NOT reliably route through the ERR
+# trap the way an ordinary nonzero-exit command does. The result on
+# 2026-08-16 22:37Z: no "FAILED" line, no STATUS upload, no shutdown — the
+# script just stopped, and the box sat idle and billing until someone noticed.
+# What DID fire was a separate EXIT trap (killing the progress-log shipper),
+# which is why the symptom looked like a hung network call rather than what it
+# actually was.
+#
+# EXIT traps fire on ANY shell termination — normal completion, `set -e`,
+# nounset, a signal — so this is the one hook that cannot be bypassed the way
+# ERR was. It replaces the ERR trap entirely and the script's own final
+# shutdown call: reaching the end of the script normally is exit 0, which
+# still fires this, still reports (skipping the FAILED branch), still shuts
+# the box down. One path, always taken, instead of two paths where only one
+# was ever proven to work.
+# ---------------------------------------------------------------------------
+# ⛔ $? IS NOT TRUSTWORTHY HERE, PROVEN BY TEST, NOT ASSUMPTION:
+#
+#     bash -c 'set -euo pipefail; trap "echo \$?" EXIT; echo "${NEVER_SET}"'
+#
+# prints 0. A nounset abort — the exact failure class that killed the
+# 2026-08-16 22:37Z run — does not give the EXIT trap a nonzero $? to key off,
+# even though the script plainly did not finish. Gating "was this a failure"
+# on the exit code, which the first version of this fix did, would have kept
+# silently reporting success for this one. So this does not ask "what was the
+# exit code" at all: it defaults to FAILED, and the ONLY thing that clears
+# that default is reaching the one explicit line at the very end of this
+# script that means "everything actually finished" (`COMPLETED=1`, below).
+# That does not depend on bash's exit-status semantics for any particular
+# failure mode, current or future.
+COMPLETED=0
+
+on_exit() {
+    trap - EXIT
+    if [[ -n "${PROGRESS_PID:-}" ]]; then
+        kill "${PROGRESS_PID}" 2>/dev/null || true
+    fi
+    # Unconditional: the log is the only debugging surface this run has, and
+    # it must reach S3 whether or not the block below correctly identifies a
+    # failure. On a clean run this duplicates the copy the bundle sync already
+    # made to the same key — harmless.
+    aws s3 cp "${LOG}" "${RESULTS_BUCKET}/runs/${RUN_ID}/bootstrap.log" 2>/dev/null || true
+    if [[ "${COMPLETED}" != "1" ]]; then
+        echo "FAILED — did not reach the end of the script (COMPLETED was never set)"
+        echo "failed" > /tmp/STATUS
+        aws s3 cp /tmp/STATUS "${RESULTS_BUCKET}/runs/${RUN_ID}/STATUS" 2>/dev/null || true
+    fi
     shutdown -h now
 }
-trap on_error ERR
+trap on_exit EXIT
 
 # ---------------------------------------------------------------------------
 # Every external fetch below goes through this rather than running bare.
@@ -129,7 +186,6 @@ aws --version || { echo "FATAL: aws cli did not install; nothing downstream can 
     done
 ) &
 PROGRESS_PID=$!
-trap 'kill ${PROGRESS_PID} 2>/dev/null || true' EXIT
 
 
 retry_with_timeout "uv installer" 60 bash -c 'curl -fsSL https://astral.sh/uv/install.sh | sh'
@@ -236,5 +292,8 @@ aws s3 sync --only-show-errors --exclude STATUS "${BUNDLE}/" "${RESULTS_BUCKET}/
 aws s3 cp "${BUNDLE}/STATUS" "${RESULTS_BUCKET}/runs/${RUN_ID}/STATUS"
 
 echo "=== complete: ${RESULTS_BUCKET}/runs/${RUN_ID}/"
-trap - ERR
-shutdown -h now
+# The one line in this script that means "actually finished" — see the
+# COMPLETED note above on_exit for why this, and not the exit code, is what
+# decides success. No explicit shutdown here either: on_exit fires
+# unconditionally on any shell exit and shuts the box down regardless.
+COMPLETED=1
