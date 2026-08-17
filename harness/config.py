@@ -161,9 +161,7 @@ SUITE: list[Line] = [
         data_format="skene",
         corpus="tpch_100_skene",
         relation="testdata.tpch_100_skene",
-        # 3 rather than 5: the corpus is 40GB and this is the longest line in
-        # the suite. Three still gives a minimum worth trusting.
-        iterations=3,
+        iterations=5,
         timeout_s=900,
     ),
     Line(
@@ -174,11 +172,11 @@ SUITE: list[Line] = [
         data_format="skene",
         corpus="job_skene",
         relation="testdata.job_skene",
-        # JOB runs the whole 113-query suite in ~30s locally, so three
-        # iterations is minutes, not hours. The timeout exists to bound a
-        # pathological plan, not to fit the schedule: a JOB query crossing 120s
-        # is a regression regardless.
-        iterations=3,
+        # JOB runs the whole 113-query suite in ~30s locally, so five
+        # iterations is still minutes, not hours. The timeout exists to bound
+        # a pathological plan, not to fit the schedule: a JOB query crossing
+        # 120s is a regression regardless.
+        iterations=5,
         timeout_s=120,
     ),
     Line(
@@ -189,7 +187,7 @@ SUITE: list[Line] = [
         data_format="skene",
         corpus="h2o_skene",
         relation="testdata.h2o_skene",
-        iterations=3,
+        iterations=5,
         timeout_s=300,
     ),
     Line(

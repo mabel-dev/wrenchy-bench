@@ -143,7 +143,15 @@ def verify_corpora(data_root: str, lines: list) -> dict:
 
 
 def flag_unstable(records: list[dict]) -> None:
-    """Mark queries whose spread across iterations exceeds the threshold.
+    """Mark queries whose WARM spread exceeds the threshold.
+
+    Judged on warm iterations only — cold is systematically slower (nothing is
+    cached yet), not noisy, and mixing it into the same pool as warm times
+    would flag every query on the cold/warm gap alone rather than on genuine
+    instability. With every line now at 5 iterations (1 cold + 4 warm), the
+    slowest of the 4 warm times is ALSO discounted before judging spread: one
+    transient blip in an otherwise-clean set of 4 shouldn't condemn the other
+    3, and this is exactly the shape a single blip takes.
 
     An unstable query's minimum is not a signal: the machine moved under it, so
     a change measured against it is measuring the machine.
@@ -153,13 +161,23 @@ def flag_unstable(records: list[dict]) -> None:
         by_query.setdefault(record["query"], []).append(record)
 
     for rows in by_query.values():
-        times = [r["duration_ms"] for r in rows if r["status"] == "ok" and r["duration_ms"]]
-        if len(times) < 2:
+        warm = sorted(
+            r["duration_ms"]
+            for r in rows
+            if r["status"] == "ok" and r["duration_ms"] and r.get("cache_state") == "warm"
+        )
+        if len(warm) < 2:
             continue
-        lowest = min(times)
-        if lowest > 0 and (max(times) - lowest) / lowest > UNSTABLE_SPREAD:
+        # The 4-warm case is what every line now produces normally; anything
+        # else (a partial/killed line, a mid-run timeout eating an iteration)
+        # falls back to judging whatever warm times did complete, undiscounted
+        # — still cold-excluded, which is the change that matters most, even
+        # when there are too few points left to also drop an outlier.
+        judged = warm[:-1] if len(warm) >= 4 else warm
+        lowest, highest = judged[0], judged[-1]
+        if lowest > 0 and (highest - lowest) / lowest > UNSTABLE_SPREAD:
             for row in rows:
-                if row["status"] == "ok":
+                if row["status"] == "ok" and row.get("cache_state") == "warm":
                     row["status"] = "unstable"
 
 
