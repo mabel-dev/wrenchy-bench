@@ -22,6 +22,7 @@ permissions:
   contents: write
   id-token: write # OIDC to AWS, read-only
   issues: write
+  actions: write # to dispatch pages.yml explicitly — see the deploy step below
 
 concurrency:
   group: weekly-benchmark
@@ -97,6 +98,22 @@ jobs:
           git add site/data
           git diff --quiet --cached || git commit -m "bench: ${{ steps.find.outputs.run_id }}"
           git push
+
+      - name: Deploy the results site
+        # A push made with the default GITHUB_TOKEN does NOT trigger other
+        # workflows' `push` triggers — GitHub's own anti-recursion rule, to
+        # stop a workflow's commit from spawning an infinite chain of runs.
+        # pages.yml's push-trigger (paths: site/**) therefore never fired from
+        # the commit above: confirmed live — it had run exactly once, from
+        # the first manual push last night, and never again despite every
+        # later site/data commit landing correctly on main. Dispatching it
+        # explicitly sidesteps the restriction entirely, since workflow_dispatch
+        # is a different API path from the push-event auto-trigger and is not
+        # subject to the same rule. Harmless to run even when the commit above
+        # was a no-op (nothing changed) — it just redeploys identical content.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --ref main
 
       - name: Raise an issue on a hard failure
         if: steps.report.outcome == 'failure'
