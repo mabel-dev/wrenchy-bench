@@ -41,7 +41,12 @@ from harness.config import (  # noqa: E402
 from harness.schema import QUERY_COLUMNS, RUN_COLUMNS, flatten_run  # noqa: E402
 
 PART_CEILING = 30 * 1024 * 1024  # the service returns 413 above this
-AUTH_URL = os.environ.get("OPTERYX_AUTH_URL", "https://authenticate.opteryx.app/v1/token")
+# No /v1/ prefix: authenticate.opteryx.app mounts its routers with no prefix
+# at any level (app/main.py -> app/routes/__init__.py -> token.py's own
+# @router.post("/token")), unlike upload.opteryx.app's /v1/upload/* — the
+# assumption that every Opteryx service follows the same convention was wrong,
+# found on the first real (non-dry-run) publish: HTTP 404 on /v1/token.
+AUTH_URL = os.environ.get("OPTERYX_AUTH_URL", "https://authenticate.opteryx.app/token")
 UPLOAD_URL = os.environ.get("OPTERYX_UPLOAD_URL", "https://upload.opteryx.app/v1/upload")
 
 
