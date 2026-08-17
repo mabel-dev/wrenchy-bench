@@ -72,13 +72,20 @@ def to_parquet(records: list[dict], columns: list[tuple[str, str]]) -> bytes:
                 "harness/schema.py so the change is reviewed rather than absorbed"
             )
 
+    # Names as declared in harness/schema.py -> the real DrakenType members.
+    # "BOOLEAN"/"TIMESTAMP" are the schema's own readable naming and do not
+    # match draken's enum (DrakenType.BOOL / .TIMESTAMP64) — a mismatch this
+    # dict has carried since it was written. --dry-run DOES exercise this
+    # (to_parquet runs unconditionally, before the dry-run branch), so it
+    # would have caught it — the actual gap was never running this file
+    # against a real bundle until the first live collect run.
     kinds = {
         "VARCHAR": DrakenType.VARCHAR,
         "INT64": DrakenType.INT64,
         "INT32": DrakenType.INT32,
         "FLOAT64": DrakenType.FLOAT64,
-        "BOOLEAN": DrakenType.BOOLEAN,
-        "TIMESTAMP": DrakenType.TIMESTAMP,
+        "BOOLEAN": DrakenType.BOOL,
+        "TIMESTAMP": DrakenType.TIMESTAMP64,
     }
 
     names, vectors = [], []
