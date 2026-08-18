@@ -1,9 +1,9 @@
 """The query driver. One coordinator process per line, invoked by run_suite.py.
 
-The coordinator isolates each query in its own subprocess, hard-killed from
-the outside if it runs away — see run_query_isolated() for why. A query that
-blows up gets recorded with status="killed" rather than costing the rest of
-the line's data.
+The coordinator runs each query in its own subprocess, so a query that dies
+costs only its own results and the line carries on. A death is recorded with
+status="crashed" and the signal that killed it — the failures are the point,
+not something to be prevented.
 
 This repo runs its own driver rather than shelling out to opteryx-core's
 `tests/performance/*/runner.py`. Those runners are the record of how the
@@ -35,13 +35,6 @@ sys.path.insert(0, os.path.dirname(HERE))
 from harness.config import SUITE_BY_ID  # noqa: E402
 from harness.probe import Probe  # noqa: E402
 
-# Headroom over a line's OWN budget for the hard, external kill of an isolated
-# query subprocess. The worker runs every iteration of one query inside that
-# one subprocess, so its legitimate worst case is iterations * timeout_s — a
-# bound of timeout_s alone would kill a query whose iterations are each slow
-# but individually well inside the per-query timeout. This margin only needs
-# to cover interpreter startup and the engine import on top of that.
-HARD_KILL_MARGIN_S = 60
 
 
 def bind_engine():
@@ -297,21 +290,16 @@ def blank_engine_telemetry() -> dict:
 def run_query_isolated(
     line, name: str, ordinal: int, run: dict, out_dir: str
 ) -> list[dict]:
-    """Run one query in its own subprocess, hard-killed from the outside.
+    """Run one query in its own subprocess and report whatever happened to it.
 
-    The in-process timeout in run_one() cannot fire for a query stuck inside a
-    single blocking native call, and — confirmed 2026-08-17 by reproducing the
-    incident on real hardware — cannot fire AT ALL when the query drives the
-    box into severe memory pressure: a query that consumed ~31.4GB of a 32GB
-    c8g.4xlarge collapsed page cache and left the OS itself unable to run a
-    trivial `free -m` for 18+ minutes, with no OOM-kill and no application-level
-    progress to check a deadline against. An external SIGKILL is the only
-    backstop proven to still land in that state — the earlier stuck run was
-    only ever recovered by a manual `terminate-instances`.
+    A query that dies takes its own subprocess with it and nothing else, so the
+    remaining queries in the line still run and still produce data. That is the
+    only thing the isolation is for.
 
-    Isolating each query in its own subprocess also contains the blast radius:
-    one query dying does not cost the other 21 queries' worth of real data,
-    which a single long-lived process for the whole line would.
+    A death is RECORDED, never prevented and never smoothed over. The suite
+    exists to surface exactly these — a query that OOMs at SF100 is a fact with
+    a date on it, and it belongs in the results as a row saying so. A silent
+    gap where a query should be is not a report.
     """
     tmp_path = os.path.join(out_dir, f".{line.id}.{name}.tmp.jsonl")
     argv = [
@@ -322,17 +310,8 @@ def run_query_isolated(
         "--out", tmp_path,
         "--filter", f"^{name}$",
     ]
-    hard_bound = line.iterations * line.timeout_s + HARD_KILL_MARGIN_S
 
-    t0 = time.monotonic()
-    killed_reason = None
-    try:
-        completed = subprocess.run(argv, timeout=hard_bound)
-        if completed.returncode != 0:
-            killed_reason = f"query subprocess exited {completed.returncode}"
-    except subprocess.TimeoutExpired:
-        killed_reason = f"query subprocess exceeded the {hard_bound:.0f}s hard bound and was killed"
-    elapsed_s = time.monotonic() - t0
+    completed = subprocess.run(argv)
 
     records: list[dict] = []
     if os.path.exists(tmp_path):
@@ -343,9 +322,8 @@ def run_query_isolated(
                 try:
                     records.append(json.loads(entry))
                 except json.JSONDecodeError:
-                    # A SIGKILL lands between the write() and the next flush()
-                    # at worst once, on the last line — truncated JSON here is
-                    # the kill itself, not a new failure to report.
+                    # The kill can land mid-write, truncating at most the last
+                    # line. That is the death itself, already reported below.
                     continue
         os.remove(tmp_path)
 
@@ -354,34 +332,36 @@ def run_query_isolated(
     for record in records:
         record["query_ordinal"] = ordinal
 
-    if killed_reason:
-        next_iteration = len(records) + 1
-        if next_iteration <= line.iterations:
-            record = dict(
-                run_id=run["run_id"],
-                line=line.id,
-                run_date=run["run_date"],
-                engine_version=run["engine_version"],
-                engine_build=run["engine_build"],
-                benchmark=line.benchmark,
-                scale_factor=line.scale_factor,
-                data_format=line.data_format,
-                codec=line.codec,
-            )
-            record.update(
-                query=name,
-                query_ordinal=ordinal,
-                iteration=next_iteration,
-                cache_state="cold" if next_iteration == 1 else "warm",
-                status="killed",
-                duration_ms=None,
-                row_count=None,
-                column_count=None,
-                error=f"{killed_reason} ({elapsed_s:.0f}s elapsed)"[:500],
-                **blank_engine_telemetry(),
-            )
-            records.append(record)
-        print(f"  {name:<6} killed    {killed_reason}", file=sys.stderr)
+    if completed.returncode != 0:
+        # Negative returncode is -SIGNUM: -9 is the OOM killer, -11 a segfault.
+        code = completed.returncode
+        how = f"killed by signal {-code}" if code < 0 else f"exited {code}"
+        died_on = len(records) + 1
+        record = dict(
+            run_id=run["run_id"],
+            line=line.id,
+            run_date=run["run_date"],
+            engine_version=run["engine_version"],
+            engine_build=run["engine_build"],
+            benchmark=line.benchmark,
+            scale_factor=line.scale_factor,
+            data_format=line.data_format,
+            codec=line.codec,
+        )
+        record.update(
+            query=name,
+            query_ordinal=ordinal,
+            iteration=died_on,
+            cache_state="cold" if died_on == 1 else "warm",
+            status="crashed",
+            duration_ms=None,
+            row_count=None,
+            column_count=None,
+            error=f"query process {how} on iteration {died_on}",
+            **blank_engine_telemetry(),
+        )
+        records.append(record)
+        print(f"  {name:<6} crashed   process {how}", file=sys.stderr)
 
     return records
 
