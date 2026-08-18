@@ -35,10 +35,12 @@ sys.path.insert(0, os.path.dirname(HERE))
 from harness.config import SUITE_BY_ID  # noqa: E402
 from harness.probe import Probe  # noqa: E402
 
-# Headroom over a line's own timeout_s for the hard, external kill of an
-# isolated query subprocess. A query that legitimately times out breaks its
-# own iteration loop well inside timeout_s; this margin only needs to cover
-# process/interpreter startup.
+# Headroom over a line's OWN budget for the hard, external kill of an isolated
+# query subprocess. The worker runs every iteration of one query inside that
+# one subprocess, so its legitimate worst case is iterations * timeout_s — a
+# bound of timeout_s alone would kill a query whose iterations are each slow
+# but individually well inside the per-query timeout. This margin only needs
+# to cover interpreter startup and the engine import on top of that.
 HARD_KILL_MARGIN_S = 60
 
 
@@ -320,7 +322,7 @@ def run_query_isolated(
         "--out", tmp_path,
         "--filter", f"^{name}$",
     ]
-    hard_bound = line.timeout_s + HARD_KILL_MARGIN_S
+    hard_bound = line.iterations * line.timeout_s + HARD_KILL_MARGIN_S
 
     t0 = time.monotonic()
     killed_reason = None
