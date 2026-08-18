@@ -132,7 +132,11 @@ jobs:
         # when this job itself does not run, so it is only removed here.
         if: always()
         run: |
-          ID="${{ needs.launch.outputs.instance_id }}"
+          # find-run.sh resolves this from the run_id tag; `needs.launch` was a
+          # job that no longer exists (launching moved to AWS), so this silently
+          # expanded to empty and the alarms were never disarmed — five had
+          # accumulated by 2026-08-18.
+          ID="${{ steps.find.outputs.instance_id }}"
           aws ec2 terminate-instances --instance-ids "$ID" >/dev/null 2>&1 || true
           aws cloudwatch delete-alarms \
             --alarm-names "opteryx-bench-killswitch-$ID" 2>/dev/null || true

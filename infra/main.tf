@@ -191,6 +191,18 @@ resource "aws_iam_role_policy" "actions" {
         Effect   = "Allow"
         Action   = "cloudwatch:DeleteAlarms"
         Resource = "arn:aws:cloudwatch:*:*:alarm:opteryx-bench-killswitch-*"
+      },
+      {
+        # Start a run. This is the ONE function and nothing else: the launcher
+        # still chooses the AMI, instance type, user-data, tags and kill-switch,
+        # so the caller can say "benchmark this version" and cannot say "run me
+        # an EC2 instance". `ec2:RunInstances` remains unreachable from outside
+        # the account — the property launch.py is protecting — and this is what
+        # lets the release trigger be driven from this repo rather than needing
+        # a second scheduler.
+        Effect   = "Allow"
+        Action   = "lambda:InvokeFunction"
+        Resource = aws_lambda_function.launcher.arn
       }
     ]
   })

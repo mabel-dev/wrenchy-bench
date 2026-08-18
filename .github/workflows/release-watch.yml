@@ -1,0 +1,113 @@
+name: benchmark a new engine release
+
+# Fires a run when opteryx-core publishes a version this suite has never
+# measured. The driving lives HERE rather than in opteryx-core: a release only
+# matters to the benchmark once the wheel is actually installable from PyPI,
+# which is the thing the suite installs and measures, and that is observable
+# from this side without a cross-repo credential.
+#
+# It decides ONLY whether to launch. Everything after that — waiting for the
+# bundle, publishing to opteryx.benchmarks.*, committing the site, deploying
+# Pages — is weekly.yml's collect job, dispatched at the end and reused
+# verbatim rather than duplicated here.
+#
+# The Sunday run is untouched: EventBridge Scheduler starts it at 02:00 and
+# weekly.yml's own cron collects it at 05:00.
+
+on:
+  schedule:
+    - cron: "17 * * * *" # hourly, off the hour — GitHub's cron is best-effort
+  workflow_dispatch:
+
+permissions:
+  contents: read # to read the versions already benchmarked
+  id-token: write # OIDC to AWS
+  actions: write # to dispatch weekly.yml
+
+# Never two watchers at once: a slow launch must not race the next hour's poll
+# into launching the same version twice.
+concurrency:
+  group: release-watch
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-1
+  AWS_BENCH_ROLE_ARN: arn:aws:iam::045121776141:role/opteryx-bench-actions
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: check
+        name: Is PyPI's latest opteryx-core already benchmarked?
+        # The set of versions already measured is site/data/index.json, which
+        # this repo already publishes — so there is no extra state store to
+        # keep in sync, and a version is considered done only once its results
+        # are actually on the site. A run that failed to publish therefore
+        # retries on the next poll rather than being silently skipped.
+        run: |
+          set -euo pipefail
+          latest=$(curl -fsSL https://pypi.org/pypi/opteryx-core/json | python3 -c \
+            'import json,sys; print(json.load(sys.stdin)["info"]["version"])')
+          echo "PyPI latest: ${latest}"
+
+          if [ -f site/data/index.json ]; then
+            done_versions=$(python3 -c \
+              'import json; print(" ".join(sorted({r["engine_version"] for r in json.load(open("site/data/index.json"))})))')
+          else
+            done_versions=""
+          fi
+          echo "already benchmarked: ${done_versions:-<none>}"
+
+          for v in ${done_versions}; do
+            if [ "$v" = "${latest}" ]; then
+              echo "${latest} is already on the site — nothing to do"
+              echo "launch=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          done
+          echo "${latest} has never been benchmarked — launching"
+          echo "launch=true" >> "$GITHUB_OUTPUT"
+          echo "version=${latest}" >> "$GITHUB_OUTPUT"
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        if: steps.check.outputs.launch == 'true'
+        with:
+          role-to-assume: ${{ env.AWS_BENCH_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - id: launch
+        name: Start the run
+        if: steps.check.outputs.launch == 'true'
+        # Invoking the launcher is the ONLY mutation this workflow makes. The
+        # Lambda still owns the AMI, instance type, user-data, tags and the
+        # kill-switch, so this can ask for a run and cannot ask for an
+        # arbitrary instance.
+        #
+        # No version is passed: the launcher installs ENGINE_VERSION=latest,
+        # which is the version just detected. If a further release lands in the
+        # gap the box measures that one instead — the manifest records what was
+        # actually installed, so the result stays honest, and the version that
+        # was skipped is simply never benchmarked (it is no longer latest).
+        run: |
+          set -euo pipefail
+          aws lambda invoke --function-name opteryx-bench-launcher \
+            --payload '{}' --cli-binary-format raw-in-base64-out /tmp/launch.json >/dev/null
+          cat /tmp/launch.json
+          run_id=$(python3 -c 'import json; print(json.load(open("/tmp/launch.json"))["run_id"])')
+          echo "run_id=${run_id}" >> "$GITHUB_OUTPUT"
+
+      - name: Hand off to the collector
+        if: steps.check.outputs.launch == 'true'
+        # weekly.yml waits for STATUS, publishes and deploys. Dispatching it is
+        # not subject to the anti-recursion rule that blocks push-triggers from
+        # a GITHUB_TOKEN commit — workflow_dispatch is a different API path,
+        # which is the same reason the site deploy step in weekly.yml works.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run weekly.yml --ref main \
+            -f run_id='${{ steps.launch.outputs.run_id }}'
+          echo "collector dispatched for ${{ steps.launch.outputs.run_id }}"
