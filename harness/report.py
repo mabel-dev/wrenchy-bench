@@ -57,10 +57,14 @@ def minimums(records: list[dict]) -> dict[str, dict]:
         statuses = {r["status"] for r in rows}
         entry = {
             "ordinal": rows[0]["query_ordinal"],
+            # `crashed` outranks the rest: the process died (OOM killer,
+            # segfault), which is a different fact from the engine raising and
+            # must not be reported as an ordinary error.
             "status": (
                 "ok"
                 if clean and statuses <= {"ok"}
-                else ("timeout" if "timeout" in statuses else
+                else ("crashed" if "crashed" in statuses else
+                      "timeout" if "timeout" in statuses else
                       "unstable" if "unstable" in statuses else "error")
             ),
             "min_ms": min(r["duration_ms"] for r in clean) if clean else None,
@@ -120,7 +124,7 @@ def detect(current: dict, history: list[dict]) -> list[dict]:
             # Status transitions need no statistics and are the signal that
             # matters most — report them on the first occurrence.
             was_ok = [p for p in previous if p["status"] == "ok"]
-            if entry["status"] in ("error", "timeout") and was_ok:
+            if entry["status"] in ("error", "timeout", "crashed") and was_ok:
                 findings.append(
                     {
                         "kind": "failure",
@@ -181,6 +185,7 @@ def summarise(run: dict, current: dict) -> dict:
             "ok": sum(1 for entry in queries.values() if entry["status"] == "ok"),
             "timeout": sum(1 for entry in queries.values() if entry["status"] == "timeout"),
             "error": sum(1 for entry in queries.values() if entry["status"] == "error"),
+            "crashed": sum(1 for entry in queries.values() if entry["status"] == "crashed"),
             "unstable": sum(1 for entry in queries.values() if entry["status"] == "unstable"),
             "peak_rss_bytes": max(
                 (entry["peak_rss_bytes"] for entry in queries.values() if entry["peak_rss_bytes"]),
@@ -218,13 +223,17 @@ def render_markdown(summary: dict, findings: list[dict]) -> str:
         note = " — machine moved during the run, excluded from baselines" if drift > 0.10 else ""
         out += [f"Calibration drift: {drift:.1%}{note}", ""]
 
-    out += ["| Line | Σ min | queries | ok | timeout | error | peak RSS |", "|---|--:|--:|--:|--:|--:|--:|"]
+    out += [
+        "| Line | Σ min | queries | ok | timeout | error | crashed | peak RSS |",
+        "|---|--:|--:|--:|--:|--:|--:|--:|",
+    ]
     for line in sorted(summary["totals"], key=lambda x: SUITE_ORDER.get(x, 99)):
         total = summary["totals"][line]
         peak = total["peak_rss_bytes"]
         out.append(
             f"| {line} | {total['sum_min_ms'] / 1000:.2f}s | {total['queries']} | "
             f"{total['ok']} | {total['timeout']} | {total['error']} | "
+            f"{total.get('crashed', 0)} | "
             f"{f'{peak / 1e9:.1f} GB' if peak else '—'} |"
         )
 
