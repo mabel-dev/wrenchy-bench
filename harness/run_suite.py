@@ -229,11 +229,17 @@ def run_line(line, data_root: str, out_dir: str, env: dict, run: dict, python: s
     result["timeout_count"] = sum(1 for r in records if r["status"] == "timeout")
     result["error_count"] = sum(1 for r in records if r["status"] == "error")
     result["unstable_count"] = sum(1 for r in records if r["status"] == "unstable")
+    # A query the coordinator's own hard-kill had to reach for — the machine
+    # was still alive but the query wasn't, and no in-process check could see
+    # it. Reported separately from timeout/error: it is a contained failure,
+    # not a driver failure, and should not be mistaken for either.
+    result["killed_count"] = sum(1 for r in records if r["status"] == "killed")
 
     peak = reading.peak_rss_bytes or 0
     print(
         f"    {len(records)} records  {wall_ms / 1000:.1f}s  peak {peak / 1e9:.1f}GB  "
-        f"{result['timeout_count']} timeouts  {result['error_count']} errors",
+        f"{result['timeout_count']} timeouts  {result['error_count']} errors  "
+        f"{result['killed_count']} killed",
         flush=True,
     )
     return records, result

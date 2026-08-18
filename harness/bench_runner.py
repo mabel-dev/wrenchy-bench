@@ -1,4 +1,9 @@
-"""The query driver. One process per line, invoked by run_suite.py.
+"""The query driver. One coordinator process per line, invoked by run_suite.py.
+
+The coordinator isolates each query in its own subprocess, hard-killed from
+the outside if it runs away — see run_query_isolated() for why. A query that
+blows up gets recorded with status="killed" rather than costing the rest of
+the line's data.
 
 This repo runs its own driver rather than shelling out to opteryx-core's
 `tests/performance/*/runner.py`. Those runners are the record of how the
@@ -20,6 +25,7 @@ import gc
 import json
 import os
 import re
+import subprocess
 import sys
 import time
 
@@ -28,6 +34,12 @@ sys.path.insert(0, os.path.dirname(HERE))
 
 from harness.config import SUITE_BY_ID  # noqa: E402
 from harness.probe import Probe  # noqa: E402
+
+# Headroom over a line's own timeout_s for the hard, external kill of an
+# isolated query subprocess. A query that legitimately times out breaks its
+# own iteration loop well inside timeout_s; this margin only needs to cover
+# process/interpreter startup.
+HARD_KILL_MARGIN_S = 60
 
 
 def bind_engine():
@@ -280,6 +292,98 @@ def blank_engine_telemetry() -> dict:
     }
 
 
+def run_query_isolated(
+    line, name: str, ordinal: int, run: dict, out_dir: str
+) -> list[dict]:
+    """Run one query in its own subprocess, hard-killed from the outside.
+
+    The in-process timeout in run_one() cannot fire for a query stuck inside a
+    single blocking native call, and — confirmed 2026-08-17 by reproducing the
+    incident on real hardware — cannot fire AT ALL when the query drives the
+    box into severe memory pressure: a query that consumed ~31.4GB of a 32GB
+    c8g.4xlarge collapsed page cache and left the OS itself unable to run a
+    trivial `free -m` for 18+ minutes, with no OOM-kill and no application-level
+    progress to check a deadline against. An external SIGKILL is the only
+    backstop proven to still land in that state — the earlier stuck run was
+    only ever recovered by a manual `terminate-instances`.
+
+    Isolating each query in its own subprocess also contains the blast radius:
+    one query dying does not cost the other 21 queries' worth of real data,
+    which a single long-lived process for the whole line would.
+    """
+    tmp_path = os.path.join(out_dir, f".{line.id}.{name}.tmp.jsonl")
+    argv = [
+        sys.executable,
+        os.path.abspath(__file__),
+        "--line", line.id,
+        "--run", json.dumps(run),
+        "--out", tmp_path,
+        "--filter", f"^{name}$",
+    ]
+    hard_bound = line.timeout_s + HARD_KILL_MARGIN_S
+
+    t0 = time.monotonic()
+    killed_reason = None
+    try:
+        completed = subprocess.run(argv, timeout=hard_bound)
+        if completed.returncode != 0:
+            killed_reason = f"query subprocess exited {completed.returncode}"
+    except subprocess.TimeoutExpired:
+        killed_reason = f"query subprocess exceeded the {hard_bound:.0f}s hard bound and was killed"
+    elapsed_s = time.monotonic() - t0
+
+    records: list[dict] = []
+    if os.path.exists(tmp_path):
+        with open(tmp_path) as handle:
+            for entry in handle:
+                if not entry.strip():
+                    continue
+                try:
+                    records.append(json.loads(entry))
+                except json.JSONDecodeError:
+                    # A SIGKILL lands between the write() and the next flush()
+                    # at worst once, on the last line — truncated JSON here is
+                    # the kill itself, not a new failure to report.
+                    continue
+        os.remove(tmp_path)
+
+    # The worker only ever sees the one query it was filtered to, so its own
+    # ordinal is always 1 — overwrite with this query's real position in line.
+    for record in records:
+        record["query_ordinal"] = ordinal
+
+    if killed_reason:
+        next_iteration = len(records) + 1
+        if next_iteration <= line.iterations:
+            record = dict(
+                run_id=run["run_id"],
+                line=line.id,
+                run_date=run["run_date"],
+                engine_version=run["engine_version"],
+                engine_build=run["engine_build"],
+                benchmark=line.benchmark,
+                scale_factor=line.scale_factor,
+                data_format=line.data_format,
+                codec=line.codec,
+            )
+            record.update(
+                query=name,
+                query_ordinal=ordinal,
+                iteration=next_iteration,
+                cache_state="cold" if next_iteration == 1 else "warm",
+                status="killed",
+                duration_ms=None,
+                row_count=None,
+                column_count=None,
+                error=f"{killed_reason} ({elapsed_s:.0f}s elapsed)"[:500],
+                **blank_engine_telemetry(),
+            )
+            records.append(record)
+        print(f"  {name:<6} killed    {killed_reason}", file=sys.stderr)
+
+    return records
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run one benchmark line")
     parser.add_argument("--line", required=True, choices=sorted(SUITE_BY_ID))
@@ -288,7 +392,6 @@ def main() -> int:
     parser.add_argument("--filter", default=None, help="regex over query names")
     args = parser.parse_args()
 
-    opteryx = bind_engine()
     line = SUITE_BY_ID[args.line]
     run = json.loads(args.run)
     queries = load_queries(line)
@@ -299,6 +402,29 @@ def main() -> int:
         print(f"no queries matched for {line.id}", file=sys.stderr)
         return 1
 
+    print(
+        f"{line.label}: {len(queries)} queries x {line.iterations} iterations, "
+        f"{line.timeout_s:.0f}s timeout",
+        file=sys.stderr,
+    )
+
+    if args.filter is None:
+        # Coordinator: isolate each query in its own subprocess, hard-killed
+        # from the outside. See run_query_isolated() for why the in-process
+        # timeout below is not, on its own, a sufficient backstop.
+        out_dir = os.path.dirname(os.path.abspath(args.out)) or "."
+        os.makedirs(out_dir, exist_ok=True)
+        with open(args.out, "w") as sink:
+            for ordinal, (name, _) in enumerate(queries, start=1):
+                for record in run_query_isolated(line, name, ordinal, run, out_dir):
+                    sink.write(json.dumps(record) + "\n")
+                sink.flush()
+        return 0
+
+    # Worker: run the (already narrowed-down) queries in-process. Invoked by
+    # the coordinator above with --filter set to exactly one query name; also
+    # usable directly for local debugging against a subset of queries.
+    opteryx = bind_engine()
     base = {
         "run_id": run["run_id"],
         "line": line.id,
@@ -310,12 +436,6 @@ def main() -> int:
         "data_format": line.data_format,
         "codec": line.codec,
     }
-
-    print(
-        f"{line.label}: {len(queries)} queries x {line.iterations} iterations, "
-        f"{line.timeout_s:.0f}s timeout",
-        file=sys.stderr,
-    )
 
     with open(args.out, "w") as sink:
         for ordinal, (name, sql) in enumerate(queries, start=1):
