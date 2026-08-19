@@ -93,9 +93,20 @@ echo "=== weekly bench ${RUN_ID} · engine ${ENGINE_VERSION} · harness ${HARNES
 mkdir -p "${WORK}"
 
 # --- Toolchain ---------------------------------------------------------
+# ⛔ apt runs BEFORE the log shipper exists (that needs the aws cli below), so
+# a hang here is completely invisible — no progress.log, nothing. On
+# 2026-08-19 esm-cache.service took the dpkg lock at boot and never released
+# it: apt-get blocked forever at 0.15% CPU and the run was dead 15 minutes
+# before anyone could see it. Ubuntu's own boot-time apt units race every
+# instance we launch, so this is bounded three ways: stop the units, make apt
+# wait for the lock instead of blocking on it indefinitely, and cap the whole
+# thing with the same timeout+retry everything else here uses.
 export DEBIAN_FRONTEND=noninteractive
-apt-get update -qq
-apt-get install -y -qq git curl unzip
+systemctl stop esm-cache.service apt-news.service unattended-upgrades.service 2>/dev/null || true
+systemctl kill --kill-who=all apt-daily.service apt-daily-upgrade.service 2>/dev/null || true
+APT_OPTS=(-o DPkg::Lock::Timeout=120 -qq)
+retry_with_timeout "apt update" 180 apt-get "${APT_OPTS[@]}" update
+retry_with_timeout "apt install" 180 apt-get "${APT_OPTS[@]}" install -y git curl unzip
 
 # Canonical's image ships no awscli. Everything downstream reports via
 # `aws s3 cp`, so this goes first and is asserted.
