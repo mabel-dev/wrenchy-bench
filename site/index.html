@@ -187,7 +187,13 @@ function render(index) {
     </table></div>`;
 }
 
-fetch("data/index.json")
+// cache:"no-store" is NOT optional. GitHub Pages serves this file with
+// `cache-control: max-age=600`, so a plain fetch shows a browser copy up to
+// ten minutes stale — and on a results page that reads as "my run did not
+// publish", which is the one thing this page must never say wrongly. Reported
+// 2026-08-19: the site had three runs while the browser kept showing two.
+// The query string is belt-and-braces for anything that ignores no-store.
+fetch("data/index.json?t=" + Date.now(), { cache: "no-store" })
   .then(response => response.ok ? response.json() : [])
   .then(render)
   .catch(() => {
