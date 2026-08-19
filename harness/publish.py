@@ -9,8 +9,8 @@ Parquet is written with rugo's own writer (`pip install rugo`), which is
 PyArrow- and NumPy-free, so the control plane has the same "no PyArrow"
 posture as the engine.
 
-The upload path is the public service: POST /v1/upload/session, PUT each part
-(30MB ceiling), POST /commit with the target table and APPEND. It needs a
+The upload path is the public service: POST /v1/upload/session NAMING THE
+TARGET, PUT each part (30MB ceiling), POST /commit with APPEND. It needs a
 client-credential pair and nothing else — the in-process catalog route would
 mean putting Firestore and GCS keys into CI.
 
@@ -165,8 +165,24 @@ def get_token(client_id: str, client_secret: str) -> str:
 
 
 def upload_table(token: str, dataset: str, blob: bytes, message: str) -> dict:
-    """Session → parts → commit. Appends; never overwrites."""
-    session = _post(f"{UPLOAD_URL}/session", {}, token)
+    """Session → parts → commit. Appends; never overwrites.
+
+    THE TARGET IS DECLARED WHEN THE SESSION OPENS, not at commit. The service
+    moved it there because it now validates and casts each part against the
+    target's declared types as the part arrives, which it cannot do without
+    knowing the target first. Opening a session with an empty body returns
+    HTTP 400 — found on the first publish after the change (2026-08-19).
+
+    Commit still sends the same target: for a session that carries one the
+    service checks the two match rather than obeying the commit's, so sending
+    it is a consistency assertion, not a second source of truth.
+    """
+    target = {
+        "workspace": TELEMETRY_WORKSPACE,
+        "collection": TELEMETRY_COLLECTION,
+        "dataset": dataset,
+    }
+    session = _post(f"{UPLOAD_URL}/session", {"target": target}, token)
     session_id = session["session_id"]
 
     for part, offset in enumerate(range(0, len(blob), PART_CEILING)):
@@ -183,11 +199,7 @@ def upload_table(token: str, dataset: str, blob: bytes, message: str) -> dict:
     return _post(
         f"{UPLOAD_URL}/{session_id}/commit",
         {
-            "target": {
-                "workspace": TELEMETRY_WORKSPACE,
-                "collection": TELEMETRY_COLLECTION,
-                "dataset": dataset,
-            },
+            "target": target,
             "snapshot_message": message,
             # APPEND: the tables are an immutable history. A re-publish of the
             # same run_id is de-duplicated downstream rather than by overwriting
