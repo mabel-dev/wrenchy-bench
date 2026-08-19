@@ -114,15 +114,16 @@ jobs:
         # kill-switch, so this can ask for a run and cannot ask for an
         # arbitrary instance.
         #
-        # No version is passed: the launcher installs ENGINE_VERSION=latest,
-        # which is the version just detected. If a further release lands in the
-        # gap the box measures that one instead — the manifest records what was
-        # actually installed, so the result stays honest, and the version that
-        # was skipped is simply never benchmarked (it is no longer latest).
+        # PIN the version that was actually detected, rather than asking for
+        # "latest" and hoping it still means the same thing. The check step and
+        # the install can be minutes apart, and opteryx-core ships often enough
+        # that a release landing in that gap would silently redirect the run to
+        # a different version than the one this workflow decided to measure.
         run: |
           set -euo pipefail
           aws lambda invoke --function-name opteryx-bench-launcher \
-            --payload '{}' --cli-binary-format raw-in-base64-out /tmp/launch.json >/dev/null
+            --payload "{\"engine_version\": \"${{ steps.check.outputs.version }}\"}" \
+            --cli-binary-format raw-in-base64-out /tmp/launch.json >/dev/null
           cat /tmp/launch.json
           run_id=$(python3 -c 'import json; print(json.load(open("/tmp/launch.json"))["run_id"])')
           echo "run_id=${run_id}" >> "$GITHUB_OUTPUT"

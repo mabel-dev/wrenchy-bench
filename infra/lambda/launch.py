@@ -65,15 +65,15 @@ def _param(name: str) -> str:
     return ssm.get_parameter(Name=name)["Parameter"]["Value"]
 
 
-def _user_data(run_id: str) -> str:
+def _user_data(run_id: str, engine_version: str, harness_ref: str) -> str:
     body = s3.get_object(Bucket=BOOTSTRAP_BUCKET, Key=BOOTSTRAP_KEY)["Body"].read().decode()
     # The script's own shebang is dropped; the exports go between it and the body.
     body = body.split("\n", 1)[1] if body.startswith("#!") else body
     header = "\n".join(
         [
             "#!/usr/bin/env bash",
-            f"export ENGINE_VERSION='{ENGINE_VERSION}'",
-            f"export HARNESS_REF='{HARNESS_REF}'",
+            f"export ENGINE_VERSION='{engine_version}'",
+            f"export HARNESS_REF='{harness_ref}'",
             f"export CORPUS_PREFIX='{CORPUS_PREFIX}'",
             f"export RESULTS_BUCKET='{RESULTS_BUCKET}'",
             f"export RUN_ID='{run_id}'",
@@ -131,6 +131,18 @@ def handler(event, context):
         datetime.timezone.utc
     ).strftime("%Y-%m-%dT%H:%MZ")
 
+    # The version is the caller's to choose, defaulting to the configured one
+    # ("latest"). Without this the function could only ever measure whatever
+    # PyPI called latest AT INSTALL TIME, so a release that had already been
+    # superseded was unreachable: benchmarking 0.9.71 on 2026-08-19, once
+    # 0.9.73 had shipped, meant hand-building user-data and calling
+    # run_instances directly — which also meant no kill-switch was armed,
+    # because that happens here. Backfilling a version, or re-measuring one to
+    # confirm a regression, is normal work and should not require bypassing
+    # this function and losing its safety net with it.
+    engine_version = (event or {}).get("engine_version") or ENGINE_VERSION
+    harness_ref = (event or {}).get("harness_ref") or HARNESS_REF
+
     try:
         response = ec2.run_instances(
             ImageId=_param(AMI_PARAM),
@@ -141,7 +153,7 @@ def handler(event, context):
             SecurityGroupIds=[_param("/opteryx-bench/security-group-id")],
             IamInstanceProfile={"Arn": _param("/opteryx-bench/instance-profile-arn")},
             BlockDeviceMappings=BLOCK_DEVICES,
-            UserData=_user_data(run_id),
+            UserData=_user_data(run_id, engine_version, harness_ref),
             # On-demand, not spot: an interruption at hour four wastes the run,
             # and $3 does not justify checkpointing to survive one.
             InstanceInitiatedShutdownBehavior="terminate",
@@ -153,7 +165,7 @@ def handler(event, context):
                         {"Key": "Name", "Value": f"opteryx-bench-{run_id}"},
                         {"Key": "project", "Value": "wrenchy-bench"},
                         {"Key": "run_id", "Value": run_id},
-                        {"Key": "engine_version", "Value": ENGINE_VERSION},
+                        {"Key": "engine_version", "Value": engine_version},
                     ],
                 }
             ],
@@ -190,6 +202,15 @@ def handler(event, context):
             ),
         )
 
-    result = {"run_id": run_id, "instance_id": instance_id, "killswitch_armed": armed}
+    # engine_version is echoed because the caller may not have chosen it — a
+    # scheduled run passes nothing and gets "latest", and the log line is then
+    # the only record of what was ASKED for, distinct from what the box
+    # actually installed (which the run manifest records).
+    result = {
+        "run_id": run_id,
+        "instance_id": instance_id,
+        "engine_version": engine_version,
+        "killswitch_armed": armed,
+    }
     print(json.dumps(result))
     return result
