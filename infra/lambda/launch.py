@@ -91,14 +91,21 @@ def _arm_killswitch(instance_id: str) -> None:
     2026-08-19 neither held: a run wedged so hard on TPC-H SF100 that its 30s
     log shipper stopped and the scheduled shutdown never fired, leaving the box
     alive for 10 hours. This does not depend on the box at all: a CloudWatch
-    alarm carries the native EC2 terminate action, and one hourly datapoint
-    with a -1 threshold simply means "alive for an hour" — any published
-    datapoint clears -1, busy or idle.
+    alarm carries the native EC2 terminate action, and a -1 threshold means any
+    published datapoint breaches, busy or idle.
 
-    ONE hour, not eight. A healthy full suite is ~25 minutes, so this is more
-    than double the real runtime and still bounds a wedge at an hour instead of
-    overnight. A run legitimately slower than this is one worth interrupting
-    and looking at.
+    ⛔ THE HOUR COMES FROM Period * EvaluationPeriods, AND BOTH MATTER.
+    EvaluationPeriods counts CONSECUTIVE PERIODS THAT CONTAIN DATA, so it is
+    the product that is the deadline, never the count alone. Setting
+    EvaluationPeriods=1 against Period=3600 does NOT mean "an hour" — it means
+    "the first hourly period holding any datapoint", which is the one the
+    instance boots into. Tried on 2026-08-19: the alarm went INSUFFICIENT_DATA
+    -> ALARM 68 seconds after creation and killed the run during `uv` install.
+
+    12 x 300s is a real hour: CPUUtilization publishes every 5 minutes under
+    basic monitoring, so twelve consecutive 5-minute periods with data is sixty
+    minutes alive. A healthy full suite is ~25 minutes, so an hour is more than
+    double the real runtime while bounding a wedge at an hour, not overnight.
     """
     cloudwatch.put_metric_alarm(
         AlarmName=f"opteryx-bench-killswitch-{instance_id}",
@@ -107,8 +114,8 @@ def _arm_killswitch(instance_id: str) -> None:
         MetricName="CPUUtilization",
         Dimensions=[{"Name": "InstanceId", "Value": instance_id}],
         Statistic="Maximum",
-        Period=3600,
-        EvaluationPeriods=1,
+        Period=300,
+        EvaluationPeriods=12,
         Threshold=-1,
         ComparisonOperator="GreaterThanThreshold",
         TreatMissingData="notBreaching",
