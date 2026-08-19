@@ -163,8 +163,8 @@ function render(index) {
     const suite = Object.values(run.totals).reduce((sum, t) => sum + (t.sum_min_ms || 0), 0);
     return `<tr>
       <td class="k">${run.run_id}</td>
-      <td><span class="chip ${run.status}">${run.status}</span></td>
-      <td>${run.engine_version}+${run.engine_build}</td>
+      <td class="n"><span class="chip ${run.status}">${run.status}</span></td>
+      <td class="n">${run.engine_version}+${run.engine_build}</td>
       <td class="n">${fmt.secs(suite)}</td>
     </tr>`;
   }).join("");
