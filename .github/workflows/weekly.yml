@@ -126,17 +126,42 @@ jobs:
             --label benchmark
 
       - name: Terminate the instance and disarm the kill-switch
-        # The instance self-terminates and carries its own 7h watchdog; this is
-        # the backstop for the case where it died before reaching either. The
-        # 8h CloudWatch kill-switch armed at launch stays as the last resort for
-        # when this job itself does not run, so it is only removed here.
+        # ⛔ THE ALARM IS ONLY REMOVED ONCE THE INSTANCE IS CONFIRMED GONE.
+        #
+        # These two commands used to run unconditionally, each `|| true`. The
+        # collector's role has cloudwatch:DeleteAlarms but NOT
+        # ec2:TerminateInstances, so the delete succeeded while the terminate
+        # silently failed — stripping the last-resort kill-switch off an
+        # instance that was still running. On 2026-08-19 that cost 10 hours:
+        # the 0.9.71 run wedged at 20:50, this job hit wait-for-run.sh's 450m
+        # deadline at ~04:12, `if: always()` deleted the alarm — 27 minutes
+        # before the 8h alarm would have terminated the box itself — and the
+        # instance then ran unprotected until it was killed by hand.
+        #
+        # Leaving an alarm behind is harmless; removing one from a live
+        # instance is not. So: terminate, verify, and only then disarm.
         if: always()
         run: |
-          # find-run.sh resolves this from the run_id tag; `needs.launch` was a
-          # job that no longer exists (launching moved to AWS), so this silently
-          # expanded to empty and the alarms were never disarmed — five had
-          # accumulated by 2026-08-18.
           ID="${{ steps.find.outputs.instance_id }}"
-          aws ec2 terminate-instances --instance-ids "$ID" >/dev/null 2>&1 || true
-          aws cloudwatch delete-alarms \
-            --alarm-names "opteryx-bench-killswitch-$ID" 2>/dev/null || true
+          if [ -z "$ID" ]; then
+            echo "no instance id for this run — nothing to clean up"
+            exit 0
+          fi
+
+          if ! aws ec2 terminate-instances --instance-ids "$ID" >/dev/null 2>&1; then
+            echo "::warning::could not terminate ${ID} (missing ec2:TerminateInstances?)."
+            echo "::warning::LEAVING the kill-switch armed — it is the only thing that can stop it."
+            exit 0
+          fi
+
+          state=$(aws ec2 describe-instances --instance-ids "$ID" \
+            --query 'Reservations[].Instances[].State.Name' --output text 2>/dev/null || true)
+          case "$state" in
+            shutting-down|terminated)
+              aws cloudwatch delete-alarms --alarm-names "opteryx-bench-killswitch-$ID" 2>/dev/null || true
+              echo "terminated ${ID} (${state}) and disarmed its kill-switch"
+              ;;
+            *)
+              echo "::warning::${ID} is '${state:-unknown}' after terminate — kill-switch left armed."
+              ;;
+          esac

@@ -15,8 +15,13 @@ name: benchmark a new engine release
 # weekly.yml's own cron collects it at 05:00.
 
 on:
-  schedule:
-    - cron: "17 * * * *" # hourly, off the hour — GitHub's cron is best-effort
+  # ⛔ HOURLY SCHEDULE DISABLED 2026-08-19. This watcher had no notion of a run
+  # already being in flight — it only checked whether a version was on the
+  # site. The 0.9.71 run wedged and never published, so every poll launched
+  # another instance: 8 failed launches on VcpuLimitExceeded overnight, and a
+  # fresh instance the moment terminating the wedged one freed capacity.
+  # Re-enable only once the in-flight guard below is trusted AND the collector
+  # can actually terminate what it disarms (see weekly.yml).
   workflow_dispatch:
 
 permissions:
@@ -78,9 +83,31 @@ jobs:
           role-to-assume: ${{ env.AWS_BENCH_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - id: inflight
+        name: Refuse to launch while a run is already going
+        if: steps.check.outputs.launch == 'true'
+        # The site tells us what has FINISHED, never what is running now. A run
+        # that wedges never publishes, so a site-only check re-launches it every
+        # single poll: on 2026-08-19 that produced 8 failed launches overnight
+        # against the 32-vCPU limit, then a real second instance the moment
+        # terminating the wedged one freed capacity. The account cannot fit two
+        # c8g.4xlarge runs anyway, so the only safe answer is to wait.
+        run: |
+          set -euo pipefail
+          live=$(aws ec2 describe-instances \
+            --filters "Name=tag:project,Values=wrenchy-bench" \
+                      "Name=instance-state-name,Values=pending,running,shutting-down" \
+            --query 'Reservations[].Instances[].InstanceId' --output text)
+          if [ -n "${live}" ]; then
+            echo "::warning::a run is already in flight (${live}) — not launching another"
+            echo "proceed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "proceed=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - id: launch
         name: Start the run
-        if: steps.check.outputs.launch == 'true'
+        if: steps.check.outputs.launch == 'true' && steps.inflight.outputs.proceed == 'true'
         # Invoking the launcher is the ONLY mutation this workflow makes. The
         # Lambda still owns the AMI, instance type, user-data, tags and the
         # kill-switch, so this can ask for a run and cannot ask for an
@@ -100,7 +127,7 @@ jobs:
           echo "run_id=${run_id}" >> "$GITHUB_OUTPUT"
 
       - name: Hand off to the collector
-        if: steps.check.outputs.launch == 'true'
+        if: steps.check.outputs.launch == 'true' && steps.inflight.outputs.proceed == 'true'
         # weekly.yml waits for STATUS, publishes and deploys. Dispatching it is
         # not subject to the anti-recursion rule that blocks push-triggers from
         # a GITHUB_TOKEN commit — workflow_dispatch is a different API path,
