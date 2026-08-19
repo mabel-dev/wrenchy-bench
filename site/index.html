@@ -60,7 +60,7 @@
 
   .delta-up   { color:var(--alarm); }
   .delta-down { color:var(--ok); }
-  .spark { display:block; }
+  .spark { display:inline-block; vertical-align:middle; }
   .empty { font-family:var(--mono); font-size:13px; color:var(--muted); padding:36px 0; }
   footer { margin-top:56px; padding-top:18px; border-top:2px solid var(--ink);
            font-family:var(--mono); font-size:11px; color:var(--muted); }
@@ -153,7 +153,7 @@ function render(index) {
       <td class="k">${line}</td>
       <td class="n">${fmt.secs(total.sum_min_ms)}</td>
       <td class="n">${delta(total.sum_min_ms, before)}</td>
-      <td>${spark(series)}</td>
+      <td class="n">${spark(series)}</td>
       <td class="n">${total.ok}/${total.queries}</td>
       <td class="n">${failures ? `<span class="delta-up">${failures}</span>` : "—"}</td>
       <td class="n">${fmt.gb(total.peak_rss_bytes)}</td>
