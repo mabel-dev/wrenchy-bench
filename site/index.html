@@ -44,8 +44,9 @@
 
   .scroller { overflow-x:auto; border:1px solid var(--rule); background:var(--surface); margin:22px 0; }
   table { border-collapse:collapse; width:100%; font-family:var(--mono); font-size:13px; }
-  th { text-align:left; font-size:10px; letter-spacing:0.1em; text-transform:uppercase;
+  th { text-align:left; font-size:12px; letter-spacing:0.1em; text-transform:uppercase;
        color:var(--muted); padding:11px 13px; border-bottom:1px solid var(--rule-firm); white-space:nowrap; }
+  th:not(:first-child) { text-align:right; }
   td { padding:10px 13px; border-bottom:1px solid var(--rule); color:var(--ink-soft); white-space:nowrap; }
   tbody tr:last-child td { border-bottom:0; }
   td.k { color:var(--ink); font-weight:600; }
@@ -71,16 +72,13 @@
 
 <header>
   <h1>Wrenchy Bench</h1>
-  <p class="sub">Seven workloads on a c8g.4xlarge, weekly. Times are the minimum across iterations,
-  over queries that ran clean — an unstable query had the machine move under it, so its minimum
-  measures the machine and is excluded.</p>
+  <p class="sub">Tracking the performance of Opteryx release-over-release.</p>
 </header>
 
 <div id="app"><p class="empty">Loading…</p></div>
 
 <footer>
-  Raw bundles in S3 · full telemetry in <code>opteryx.telemetry.benchmarks</code> ·
-  <a href="https://github.com/mabel-dev/wrenchy-bench">source</a>
+  <a href="https://github.com/mabel-dev/wrenchy-bench">The Source, With Love</a>
 </footer>
 
 </div>
@@ -157,7 +155,6 @@ function render(index) {
       <td>${spark(series)}</td>
       <td class="n">${total.ok}/${total.queries}</td>
       <td class="n">${failures ? `<span class="delta-up">${failures}</span>` : "—"}</td>
-      <td class="n">${total.unstable || "—"}</td>
       <td class="n">${fmt.gb(total.peak_rss_bytes)}</td>
     </tr>`;
   }).join("");
@@ -174,11 +171,11 @@ function render(index) {
 
   app.innerHTML = `
     ${headline}
-    <h2>By line</h2>
+    <h2>By benchmark</h2>
     <div class="scroller"><table>
       <thead><tr>
-        <th>Line</th><th>Σ min</th><th>vs prev</th><th>trend</th>
-        <th>ok</th><th>failed</th><th>unstable</th><th>peak RSS</th>
+        <th>Benchmark</th><th>Fastest run</th><th>vs prev</th><th>trend</th>
+        <th>ok</th><th>errors</th><th>peak RSS</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table></div>
