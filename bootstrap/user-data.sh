@@ -40,8 +40,11 @@ LOG=/var/log/bench-bootstrap.log
 
 exec > >(tee -a "${LOG}") 2>&1
 
-# Watchdog first, before anything that could hang. 7h = run budget + headroom.
-shutdown -h +420 "benchmark watchdog" &
+# Watchdog first, before anything that could hang. 75m against a ~25m suite:
+# generous for a slow run, and an hour sooner than the CloudWatch kill-switch
+# so the box normally stops itself. Do NOT rely on this alone — a hard enough
+# wedge stops it firing at all (2026-08-19: 10h alive with this armed).
+shutdown -h +75 "benchmark watchdog" &
 
 # ONE handler, on EXIT not ERR: ERR does not reliably fire for a `set -u`
 # nounset abort (confirmed by test: a bare nounset trap prints $?=0, not

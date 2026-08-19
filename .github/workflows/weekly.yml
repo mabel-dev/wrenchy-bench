@@ -65,6 +65,12 @@ jobs:
       - name: Wait for the run bundle
         env:
           RUN_ID: ${{ steps.find.outputs.run_id }}
+          # 80m, against a ~25m suite and a 1h kill-switch: long enough to
+          # outlast the switch (so a wedged run's termination is observed
+          # rather than raced), short enough that a dead run is reported the
+          # same morning. The old 450m default was sized for an 8h switch and
+          # meant a wedge sat unreported for most of a day.
+          DEADLINE_MINUTES: "80"
         run: bash infra/wait-for-run.sh
 
       - name: Download the bundle

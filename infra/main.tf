@@ -193,6 +193,19 @@ resource "aws_iam_role_policy" "actions" {
         Resource = "arn:aws:cloudwatch:*:*:alarm:opteryx-bench-killswitch-*"
       },
       {
+        # Clean up the run it just collected. The collector's last step used to
+        # call this and silently fail for want of this permission, while the
+        # delete-alarms beside it succeeded — disarming the kill-switch of an
+        # instance it could not stop. Scoped by tag, so it can only terminate
+        # this project's own runners, never anything else in the account.
+        Effect   = "Allow"
+        Action   = "ec2:TerminateInstances"
+        Resource = "*"
+        Condition = {
+          StringEquals = { "ec2:ResourceTag/project" = "wrenchy-bench" }
+        }
+      },
+      {
         # Start a run. This is the ONE function and nothing else: the launcher
         # still chooses the AMI, instance type, user-data, tags and kill-switch,
         # so the caller can say "benchmark this version" and cannot say "run me

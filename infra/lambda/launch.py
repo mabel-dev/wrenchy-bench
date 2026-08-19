@@ -84,23 +84,31 @@ def _user_data(run_id: str) -> str:
 
 
 def _arm_killswitch(instance_id: str) -> None:
-    """Terminate the instance if it is still alive 8 hours from now.
+    """Terminate the instance if it is still alive an hour from now.
 
-    The instance carries its own `shutdown -h +420`, but that assumes user-data
-    got far enough to arm it and that the kernel is still responsive. This does
-    not: a CloudWatch alarm carries the native EC2 terminate action, and eight
-    consecutive hourly datapoints with a -1 threshold simply means "alive for
-    eight hours" — any published datapoint clears -1, busy or idle.
+    The instance carries its own `shutdown -h +75`, but that assumes user-data
+    got far enough to arm it and that the kernel is still responsive — and on
+    2026-08-19 neither held: a run wedged so hard on TPC-H SF100 that its 30s
+    log shipper stopped and the scheduled shutdown never fired, leaving the box
+    alive for 10 hours. This does not depend on the box at all: a CloudWatch
+    alarm carries the native EC2 terminate action, and one hourly datapoint
+    with a -1 threshold simply means "alive for an hour" — any published
+    datapoint clears -1, busy or idle.
+
+    ONE hour, not eight. A healthy full suite is ~25 minutes, so this is more
+    than double the real runtime and still bounds a wedge at an hour instead of
+    overnight. A run legitimately slower than this is one worth interrupting
+    and looking at.
     """
     cloudwatch.put_metric_alarm(
         AlarmName=f"opteryx-bench-killswitch-{instance_id}",
-        AlarmDescription=f"Terminate {instance_id}: still running 8h after launch",
+        AlarmDescription=f"Terminate {instance_id}: still running 1h after launch",
         Namespace="AWS/EC2",
         MetricName="CPUUtilization",
         Dimensions=[{"Name": "InstanceId", "Value": instance_id}],
         Statistic="Maximum",
         Period=3600,
-        EvaluationPeriods=8,
+        EvaluationPeriods=1,
         Threshold=-1,
         ComparisonOperator="GreaterThanThreshold",
         TreatMissingData="notBreaching",

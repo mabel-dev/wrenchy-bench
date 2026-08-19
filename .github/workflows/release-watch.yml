@@ -15,13 +15,14 @@ name: benchmark a new engine release
 # weekly.yml's own cron collects it at 05:00.
 
 on:
-  # ⛔ HOURLY SCHEDULE DISABLED 2026-08-19. This watcher had no notion of a run
-  # already being in flight — it only checked whether a version was on the
-  # site. The 0.9.71 run wedged and never published, so every poll launched
-  # another instance: 8 failed launches on VcpuLimitExceeded overnight, and a
-  # fresh instance the moment terminating the wedged one freed capacity.
-  # Re-enable only once the in-flight guard below is trusted AND the collector
-  # can actually terminate what it disarms (see weekly.yml).
+  schedule:
+    # DAILY, not hourly. Hourly was wrong twice over: opteryx-core ships 4-5
+    # times a week, so most polls had nothing to do, and with no in-flight
+    # guard a wedged run re-launched every single hour (2026-08-19: 8 failed
+    # launches on VcpuLimitExceeded, then a real second instance the moment
+    # capacity freed). Daily matches the release rate, and a run is now bounded
+    # at an hour by the kill-switch, so a bad one cannot outlive its own cycle.
+    - cron: "17 6 * * *" # 06:17 UTC — clear of the Sunday 02:00 launch/05:00 collect
   workflow_dispatch:
 
 permissions:
