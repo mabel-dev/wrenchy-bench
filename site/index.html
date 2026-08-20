@@ -10,7 +10,7 @@
     --ground:#F4F6F4; --surface:#FFF; --sunken:#EAEEEB;
     --ink:#111715; --ink-soft:#4B5551; --muted:#6E7873;
     --rule:#D6DDD8; --rule-firm:#B9C4BE;
-    --accent:#14655A; --signal:#9B6410; --alarm:#9E352C; --ok:#3D6B2E;
+    --accent:#14655A; --signal:#9B6410; --alarm:#9E352C; --ok:#3D6B2E; --flat:#3061A6;
     --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
     --serif: ui-serif, "Iowan Old Style", Charter, Georgia, serif;
   }
@@ -19,7 +19,7 @@
       --ground:#0D110F; --surface:#151B18; --sunken:#1B221F;
       --ink:#E4EAE6; --ink-soft:#B3BDB8; --muted:#8B9791;
       --rule:#26302C; --rule-firm:#3A4741;
-      --accent:#57B5A2; --signal:#D3A055; --alarm:#DC8177; --ok:#86BC6E;
+      --accent:#57B5A2; --signal:#D3A055; --alarm:#DC8177; --ok:#86BC6E; --flat:#6FA3E0;
     }
   }
   * { box-sizing:border-box; }
@@ -61,7 +61,11 @@
 
   .delta-up   { color:var(--alarm); }
   .delta-down { color:var(--ok); }
+  .delta-flat { color:var(--flat); }
   .spark { display:inline-block; vertical-align:middle; }
+  .chart { display:block; width:100%; height:auto; }
+  .chart-range { display:flex; justify-content:space-between; font-family:var(--mono);
+                 font-size:11px; color:var(--muted); padding:2px 13px 12px; }
   .empty { font-family:var(--mono); font-size:13px; color:var(--muted); padding:36px 0; }
   footer { margin-top:56px; padding-top:18px; border-top:2px solid var(--ink);
            font-family:var(--mono); font-size:11px; color:var(--muted); }
@@ -89,8 +93,15 @@
 const fmt = {
   secs: ms => ms == null ? "—" : (ms / 1000).toFixed(2) + "s",
   gb:   b  => b  == null ? "—" : (b / 1e9).toFixed(1) + " GB",
-  pct:  x  => (x * 100).toFixed(1) + "%",
+  // toFixed can round a small negative ratio to "-0.0" — normalize so it
+  // never reads as a negative change that rounded away to nothing.
+  pct:  x  => { const r = (x * 100).toFixed(1); return (r === "-0.0" ? "0.0" : r) + "%"; },
 };
+
+// Status strings double as CSS classes (ok/suspect/failed/crashed), so the
+// class stays keyed on the raw value; only the label shown to the reader
+// changes.
+const statusLabel = status => status === "ok" ? "okay" : status;
 
 // A single-path sparkline. Deliberately hand-drawn rather than pulled from a
 // chart library: the page has to work offline from a static file, and one
@@ -113,12 +124,42 @@ function spark(values, w = 108, h = 26) {
   </svg>`;
 }
 
+// Within ±0.99% is noise, not signal — shown as a percentage like any other
+// delta (not a bare dot, which reads as a missing value), just in blue
+// instead of red/green so it doesn't compete with real regressions.
 function delta(now, before) {
   if (now == null || before == null || !before) return "—";
   const ratio = now / before - 1;
-  if (Math.abs(ratio) < 0.01) return "·";
-  const cls = ratio > 0 ? "delta-up" : "delta-down";
+  const cls = Math.abs(ratio) < 0.0099 ? "delta-flat" : ratio > 0 ? "delta-up" : "delta-down";
   return `<span class="${cls}">${ratio > 0 ? "+" : ""}${fmt.pct(ratio)}</span>`;
+}
+
+// A wider trend line for the suite total across every recorded run (not just
+// the last five shown in the table below it) — same hand-drawn approach as
+// spark(), just with a baseline and endpoint labels since it stands alone.
+function suiteChart(history, w = 900, h = 140) {
+  const values = history.map(run =>
+    Object.values(run.totals).reduce((sum, t) => sum + (t.sum_min_ms || 0), 0));
+  if (values.length < 2) return `<p class="empty">Not enough runs yet.</p>`;
+  const lo = Math.min(...values), hi = Math.max(...values);
+  const span = (hi - lo) || 1;
+  const pad = 20;
+  const step = (w - pad * 2) / (values.length - 1);
+  const y = v => h - pad - ((v - lo) / span) * (h - pad * 2);
+  const points = values.map((v, i) => `${(pad + i * step).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+  const dots = values.map((v, i) =>
+    `<circle cx="${(pad + i * step).toFixed(1)}" cy="${y(v).toFixed(1)}" r="2.5" fill="var(--accent)"/>`
+  ).join("");
+  return `
+    <svg class="chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"
+         role="img" aria-label="Suite total across all recorded runs">
+      <line x1="${pad}" y1="${(h - pad).toFixed(1)}" x2="${w - pad}" y2="${(h - pad).toFixed(1)}"
+            stroke="var(--rule)" stroke-width="1"/>
+      <polyline points="${points}" fill="none" stroke="var(--accent)" stroke-width="1.5"
+                stroke-linejoin="round" stroke-linecap="round"/>
+      ${dots}
+    </svg>
+    <div class="chart-range"><span>${fmt.secs(lo)}</span><span>${fmt.secs(hi)}</span></div>`;
 }
 
 function render(index) {
@@ -137,7 +178,7 @@ function render(index) {
   const headline = `
     <dl class="headline">
       <div><dt>Latest run</dt><dd>${latest.run_id}</dd></div>
-      <div><dt>Status</dt><dd><span class="chip ${latest.status}">${latest.status}</span></dd></div>
+      <div><dt>Status</dt><dd><span class="chip ${latest.status}">${statusLabel(latest.status)}</span></dd></div>
       <div><dt>Engine</dt><dd>${latest.engine_version}+${latest.engine_build}</dd></div>
       <div><dt>Runs recorded</dt><dd>${index.length}</dd></div>
     </dl>`;
@@ -161,11 +202,11 @@ function render(index) {
     </tr>`;
   }).join("");
 
-  const runRows = index.slice(0, 20).map(run => {
+  const runRows = index.slice(0, 5).map(run => {
     const suite = Object.values(run.totals).reduce((sum, t) => sum + (t.sum_min_ms || 0), 0);
     return `<tr>
       <td class="k">${run.run_id}</td>
-      <td class="n"><span class="chip ${run.status}">${run.status}</span></td>
+      <td class="n"><span class="chip ${run.status}">${statusLabel(run.status)}</span></td>
       <td class="n">${run.engine_version}+${run.engine_build}</td>
       <td class="n">${fmt.secs(suite)}</td>
     </tr>`;
@@ -181,7 +222,9 @@ function render(index) {
       </tr></thead>
       <tbody>${rows}</tbody>
     </table></div>
-    <h2>Runs</h2>
+    <h2>Suite minutes, all ${index.length} runs</h2>
+    <div class="scroller">${suiteChart(history)}</div>
+    <h2>Last five runs</h2>
     <div class="scroller"><table>
       <thead><tr><th>Run</th><th>Status</th><th>Engine</th><th>Suite Σ min</th></tr></thead>
       <tbody>${runRows}</tbody>
