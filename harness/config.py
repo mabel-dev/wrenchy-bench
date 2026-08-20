@@ -37,7 +37,12 @@ S3_RESULTS_PREFIX = "s3://opteryx-bench-results"
 GCS_BUCKET = "opteryx_data"
 GCS_PREFIX = f"gs://{GCS_BUCKET}/benchmarks"
 
-CORPUS_VERSION = "v2026-08"
+# The same corpora as v2026-08, rebuilt in skene format v2. skene reads a
+# ONE-HOP window — [kVersion-1, kVersion] — so v1 files stop being readable the
+# moment a kVersion=3 build ships, and could then only be rebuilt from parquet.
+# Reading these needs opteryx-core 0.9.76 or later; earlier engines see v2 and
+# refuse it outright rather than misreading it.
+CORPUS_VERSION = "v2026-08-skene2"
 
 # Stock CPython, NOT the free-threaded build. Execution is native and already
 # runs with the GIL released, so 3.14t bought nothing; opteryx-core also stopped

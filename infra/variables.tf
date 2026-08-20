@@ -29,7 +29,11 @@ variable "opteryx_pat_secret_arn" {
 variable "corpus_version" {
   description = "Corpus prefix version the runner reads"
   type        = string
-  default     = "v2026-08"
+  # v2026-08 is the same data in skene format v1. skene's read window is one
+  # hop — [kVersion-1, kVersion] — so a kVersion=3 build would not read v1 at
+  # all, and the corpora would only be rebuildable from parquet. Rebuilt as v2
+  # and republished 2026-08-20; needs an engine that reads v2 (0.9.76+).
+  default = "v2026-08-skene2"
 }
 
 variable "instance_type" {
