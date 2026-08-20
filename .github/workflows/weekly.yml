@@ -146,11 +146,31 @@ jobs:
         #
         # Leaving an alarm behind is harmless; removing one from a live
         # instance is not. So: terminate, verify, and only then disarm.
+        #
+        # ⛔ AND NEVER TERMINATE A RUN THAT HAS NOT FINISHED. This step is
+        # `always()`, so it fires when the job fails instantly too — which was
+        # harmless only while the terminate silently failed for want of
+        # ec2:TerminateInstances. Granting that permission turned it live: on
+        # 2026-08-20 the collector killed the 0.9.74 run FIFTEEN SECONDS after
+        # the launcher started it (CloudTrail: RunInstances 07:06:30, then
+        # TerminateInstances by GitHubActions 07:06:45), and the whole daily
+        # run was lost before it had installed the engine.
+        #
+        # STATUS is the box's own "I am done" marker, written last. Its absence
+        # means the run is either still going or wedged, and neither is this
+        # job's to kill — the kill-switch bounds the wedge at an hour.
         if: always()
         run: |
           ID="${{ steps.find.outputs.instance_id }}"
           if [ -z "$ID" ]; then
             echo "no instance id for this run — nothing to clean up"
+            exit 0
+          fi
+
+          RUN="${{ steps.find.outputs.run_id }}"
+          if ! aws s3 ls "${RESULTS_BUCKET}/runs/${RUN}/STATUS" >/dev/null 2>&1; then
+            echo "::warning::${RUN} has written no STATUS — it has not finished."
+            echo "::warning::Leaving ${ID} and its kill-switch alone; the switch bounds it at 1h."
             exit 0
           fi
 
