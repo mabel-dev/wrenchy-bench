@@ -31,7 +31,16 @@ while ((SECONDS < deadline)); do
 
     # Report progress from the objects already uploaded rather than just
     # sleeping, so a stall is distinguishable from a slow line.
-    COUNT=$(aws s3 ls --recursive "${RESULTS_BUCKET}/runs/${RUN_ID}/" 2>/dev/null | wc -l | tr -d ' ')
+    #
+    # ⛔ `|| COUNT=0` IS LOAD-BEARING. `aws s3 ls` exits 1 when a prefix holds
+    # no objects, pipefail propagates that through `| wc -l`, the assignment
+    # inherits it, and `set -e` then kills the script — INSIDE the wait loop,
+    # on the very first pass. The collector is dispatched seconds after the
+    # launcher, so the box has uploaded nothing yet and the prefix is always
+    # empty on that pass: this line, whose only job is to print progress, is
+    # what stopped every run being collected. Seen 2026-08-22: the wait
+    # announced "up to 80m" and exited 1 after 1.6 seconds.
+    COUNT=$(aws s3 ls --recursive "${RESULTS_BUCKET}/runs/${RUN_ID}/" 2>/dev/null | wc -l | tr -d ' ') || COUNT=0
     echo "  $((SECONDS / 60))m elapsed · ${COUNT} objects uploaded so far"
     sleep "${POLL_SECONDS}"
 done
