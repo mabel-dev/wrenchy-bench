@@ -126,10 +126,21 @@ jobs:
         run: gh workflow run pages.yml --ref main
 
       - name: Raise an issue on a hard failure
+        # ⛔ THE LABEL MUST EXIST OR THE ISSUE IS NEVER FILED. `gh issue create`
+        # fails outright on an unknown label — it does not create the issue and
+        # then warn. On 2026-08-22 this step died with "could not add label:
+        # 'benchmark' not found" on the first run that ever reached it, so a
+        # real regression (job_skene peak RSS 2.4GB -> 8.8GB across sixteen
+        # queries) was detected and then dropped on the floor. Creating the
+        # label first is idempotent and costs one API call; a detection this
+        # suite exists to make must not be lost to repo housekeeping.
         if: steps.report.outcome == 'failure'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          gh label create benchmark \
+            --description "Raised by the weekly benchmark collector" \
+            --color B60205 2>/dev/null || true
           gh issue create \
             --title "Benchmark regression · ${{ steps.find.outputs.run_id }}" \
             --body-file bundle/REPORT.md \
