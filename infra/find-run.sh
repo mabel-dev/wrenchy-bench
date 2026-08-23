@@ -18,8 +18,17 @@ if [[ -n "${RUN_ID:-}" ]]; then
     run_id="${RUN_ID}"
     echo "collecting the run named by the caller: ${run_id}"
 else
+    # ⛔ ONLY prefixes that are actually run ids. The fallback assumes lexical
+    # order is chronological, which holds for `YYYY-MM-DDTHH:MMZ` and for
+    # nothing else: any other name sorts by its first character, and letters
+    # sort after digits. On 2026-08-23 a leftover `diag3-sf100-…` prefix from a
+    # debugging session therefore beat every real run, and the Sunday collector
+    # spent its full 80-minute deadline waiting for a STATUS that prefix was
+    # never going to have — while the real 0.9.78 run sat uncollected.
     run_id=$(aws s3 ls "${RESULTS_BUCKET}/runs/" |
-        awk '/PRE/ {print $2}' | sed 's:/$::' | sort | tail -1)
+        awk '/PRE/ {print $2}' | sed 's:/$::' |
+        grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}Z$' |
+        sort | tail -1) || true
     if [[ -z "${run_id}" ]]; then
         echo "::error::no runs found under ${RESULTS_BUCKET}/runs/ — did the launcher fire?"
         exit 1
