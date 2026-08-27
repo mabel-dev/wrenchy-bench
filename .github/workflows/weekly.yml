@@ -102,12 +102,29 @@ jobs:
           OPTERYX_CREDENTIALS="$SECRET" python harness/publish.py --bundle bundle
 
       - name: Commit the run to the site
+        # ⛔ REBASE BEFORE PUSH, WITH RETRIES. The job checks out main when it
+        # starts and pushes 20-80 minutes later, after the wait — any human
+        # push in that window makes this push non-fast-forward and `set -e`
+        # kills the job before the site deploys. On 2026-08-27 the margin was
+        # SIXTEEN SECONDS: the run wrote STATUS at 17:59:39, a bench_runner
+        # edit landed on main at 17:59:55, and the collector's push at ~18:00
+        # was rejected — a clean 0.9.84 run collected, published to the
+        # platform, and then dropped before reaching the site. The collector
+        # only ever adds site/data files, so rebasing onto whatever landed is
+        # always safe.
         run: |
           git config user.name  "opteryx-bench"
           git config user.email "bench@opteryx.app"
           git add site/data
           git diff --quiet --cached || git commit -m "bench: ${{ steps.find.outputs.run_id }}"
-          git push
+          for attempt in 1 2 3; do
+            git pull --rebase origin main
+            git push && exit 0
+            echo "push rejected (attempt ${attempt}/3) — rebasing and retrying"
+            sleep 5
+          done
+          echo "::error::could not push after 3 rebase attempts"
+          exit 1
 
       - name: Deploy the results site
         # A push made with the default GITHUB_TOKEN does NOT trigger other
