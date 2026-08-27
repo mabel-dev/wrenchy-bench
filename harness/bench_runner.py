@@ -176,6 +176,23 @@ def _h2o_sort_key(name: str) -> tuple[int, int]:
 # --------------------------------------------------------------------------
 
 
+def _physical_bytes(readings: dict):
+    """The scan's physical read volume, or None if the engine reported none.
+
+    Summed rather than first-wins: one query can read both formats, and taking
+    only one key would silently under-report the other leg. Absent stays None so
+    "the engine measured nothing" cannot be mistaken for "it read nothing" —
+    which is the trap this column already fell into, reporting a hard 0 for every
+    skene, h2o, job and tpch row from build 3119 through 3281.
+    """
+    measured = [
+        readings[key]
+        for key in ("io_bytes_fetched", "io_bytes_claimed")
+        if isinstance(readings.get(key), (int, float))
+    ]
+    return sum(measured) if measured else None
+
+
 def telemetry_columns(readings: dict) -> dict:
     """Pull the columns we record out of Session.telemetry.as_dict().
 
@@ -184,9 +201,30 @@ def telemetry_columns(readings: dict) -> dict:
     `operations` breakdown, so they are summed across scan nodes here. Anything
     absent stays None — a missing measurement must stay distinguishable from a
     measurement of zero.
+
+    `bytes_processed` is the PHYSICAL read volume, and which key carries it
+    depends on the format — the engine has no single one:
+
+      * parquet → `io_bytes_fetched`, COMPRESSED bytes off storage, counted by
+        the rugo IO pipeline at the point of transfer.
+      * skene   → `io_bytes_claimed`, the on-disk extent of the row groups the
+        claim builder claimed. Skene mmaps whole files, so there is no transfer
+        point to count and no equivalent of the above; this is what a ranged
+        reader would fetch. It tracks row-group pruning and is BLIND to
+        projection (whole row groups, every column).
+
+    They are near neighbours, not the same quantity, so a series is only
+    comparable against ITS OWN history — never parquet against skene.
+
+    Deliberately NOT `billing_bytes`: that is the billing meter, dense LOGICAL
+    bytes measured at plan time, which is a different quantity again and runs
+    several times higher. It carried this column's old name (`bytes_processed`)
+    until the engine renamed it on 2026-08-25, which is what left this column
+    NULL — recording it here would silently turn a physical series into a
+    logical one.
     """
     columns = {
-        "bytes_processed": readings.get("bytes_processed"),
+        "bytes_processed": _physical_bytes(readings),
         # telemetry reports time_* in seconds; the table is milliseconds.
         "time_planning_ms": (
             readings["time_planning"] * 1000.0 if readings.get("time_planning") else None
