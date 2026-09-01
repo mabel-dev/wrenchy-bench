@@ -1,5 +1,84 @@
 [
  {
+  "run_id": "2026-09-01T11:39Z",
+  "run_date": "2026-09-01T11:43:04.602619+00:00",
+  "status": "ok",
+  "engine_version": "0.9.93",
+  "engine_build": 3487,
+  "totals": {
+   "clickbench_parquet": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 43,
+    "peak_rss_bytes": 15256371200,
+    "queries": 43,
+    "sum_min_ms": 24286.313665,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "clickbench_skene": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 43,
+    "peak_rss_bytes": 16203452416,
+    "queries": 43,
+    "sum_min_ms": 16560.747604,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "h2o_skene": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 15,
+    "peak_rss_bytes": 25215000576,
+    "queries": 15,
+    "sum_min_ms": 28846.977615,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "job_skene": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 113,
+    "peak_rss_bytes": 8850919424,
+    "queries": 113,
+    "sum_min_ms": 20872.43438,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "tpch_sf100_skene": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 22,
+    "peak_rss_bytes": 29234241536,
+    "queries": 22,
+    "sum_min_ms": 63890.359248,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "tpch_sf10_skene": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 22,
+    "peak_rss_bytes": 2499543040,
+    "queries": 22,
+    "sum_min_ms": 5654.365987,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "tpch_sf1_skene": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 22,
+    "peak_rss_bytes": 701317120,
+    "queries": 22,
+    "sum_min_ms": 1283.003714,
+    "timeout": 0,
+    "unstable": 0
+   }
+  }
+ },
+ {
   "run_id": "2026-08-31T13:51Z",
   "run_date": "2026-08-31T13:54:43.851676+00:00",
   "status": "ok",
