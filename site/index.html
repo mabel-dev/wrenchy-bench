@@ -59,12 +59,27 @@
   .suspect { background:color-mix(in srgb, var(--signal) 18%, transparent);  color:var(--signal); }
   .failed  { background:color-mix(in srgb, var(--alarm) 15%, transparent);   color:var(--alarm); }
 
-  .delta-up   { color:var(--alarm); }
-  .delta-down { color:var(--ok); }
-  .delta-flat { color:var(--flat); }
   .spark { display:inline-block; vertical-align:middle; }
   .chart { display:block; width:100%; height:auto; }
   .axis-label { font-family:var(--mono); font-size:11px; fill:var(--muted); }
+  .hit { fill:transparent; }
+  [data-tip] { cursor:crosshair; }
+  .avg { stroke:var(--muted); stroke-width:1.25; stroke-dasharray:4 3; fill:none; opacity:0.85; }
+  .legend { font-family:var(--mono); font-size:11px; color:var(--muted);
+            display:flex; gap:20px; padding:0 14px 12px; flex-wrap:wrap; }
+  .legend span { display:inline-flex; align-items:center; gap:7px; }
+  .legend i { display:inline-block; width:18px; height:0; border-top:2px solid var(--accent); }
+  .legend i.dash { border-top:2px dashed var(--muted); }
+  /* The tooltip is fixed-positioned and pointer-events:none so it can never sit
+     between the cursor and the next hit target it is describing. */
+  #tip { position:fixed; z-index:10; pointer-events:none; opacity:0; transition:opacity .08s;
+         background:var(--surface); color:var(--ink); border:1px solid var(--rule-firm);
+         font-family:var(--mono); font-size:11.5px; line-height:1.5; padding:7px 10px;
+         box-shadow:0 2px 10px rgb(0 0 0 / 0.12); white-space:nowrap;
+         font-variant-numeric:tabular-nums; }
+  #tip.on { opacity:1; }
+  #tip b { font-weight:600; }
+  #tip em { font-style:normal; color:var(--muted); }
   .empty { font-family:var(--mono); font-size:13px; color:var(--muted); padding:36px 0; }
   footer { margin-top:56px; padding-top:18px; border-top:2px solid var(--ink);
            font-family:var(--mono); font-size:11px; color:var(--muted); }
@@ -80,6 +95,7 @@
 </header>
 
 <div id="app"><p class="empty">Loading…</p></div>
+<div id="tip" role="tooltip"></div>
 
 <footer>
   <a href="https://github.com/mabel-dev/wrenchy-bench">The Source, With Love</a> ·
@@ -92,9 +108,6 @@
 const fmt = {
   secs: ms => ms == null ? "—" : (ms / 1000).toFixed(2) + "s",
   gb:   b  => b  == null ? "—" : (b / 1e9).toFixed(1) + " GB",
-  // toFixed can round a small negative ratio to "-0.0" — normalize so it
-  // never reads as a negative change that rounded away to nothing.
-  pct:  x  => { const r = (x * 100).toFixed(1); return (r === "-0.0" ? "0.0" : r) + "%"; },
 };
 
 // Status strings double as CSS classes (ok/suspect/failed/crashed), so the
@@ -102,17 +115,47 @@ const fmt = {
 // changes.
 const statusLabel = status => status === "ok" ? "okay" : status;
 
+// Escaped so a run id or version string can never break out of the attribute
+// it is stored in.
+const esc = str => String(str).replace(/[&<>"']/g, c =>
+  ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+
+// Tooltip payload: title line, value line, then a muted line. Carried on the
+// element as an attribute rather than in a JS lookup table so the markup stays
+// the single source of truth — the handler below is generic.
+const tip = (title, value, note) => `data-tip="${esc([title, value, note].join("|"))}"`;
+
+// Invisible full-height hit targets, one per point, each spanning from the
+// midpoint to its left neighbour to the midpoint to its right (and out to the
+// edge at either end). They tile the plot exactly rather than being given a
+// fixed width: overlapping bands would silently hand a hover to the wrong run
+// once runs are packed close together, which is precisely when the reader
+// needs the tooltip to tell them which run they are on.
+function hits(values, meta, x, x0, x1, h, label, note) {
+  const mid = (a, b) => (x(a) + x(b)) / 2;
+  return values.map((v, i) => {
+    const m = meta?.[i];
+    if (v == null || !m) return "";
+    const left  = i === 0 ? x0 : mid(i - 1, i);
+    const right = i === values.length - 1 ? x1 : mid(i, i + 1);
+    return `<rect class="hit" x="${left.toFixed(1)}" y="0"
+      width="${Math.max(right - left, 1).toFixed(1)}" height="${h}"
+      ${tip(m.run_id, label(v), note ? note(i, m) : m.engine)}/>`;
+  }).join("");
+}
+
 // A single-path sparkline. Deliberately hand-drawn rather than pulled from a
 // chart library: the page has to work offline from a static file, and one
 // polyline is not worth a dependency.
-function spark(values, w = 108, h = 26) {
+function spark(values, meta, w = 108, h = 26) {
   const clean = values.filter(v => v != null);
   if (clean.length < 2) return "";
   const lo = Math.min(...clean), hi = Math.max(...clean);
   const span = hi - lo || 1;
   const step = w / (values.length - 1);
+  const x = i => i * step;
   const points = values.map((v, i) =>
-    v == null ? null : `${(i * step).toFixed(1)},${(h - ((v - lo) / span) * (h - 4) - 2).toFixed(1)}`
+    v == null ? null : `${x(i).toFixed(1)},${(h - ((v - lo) / span) * (h - 4) - 2).toFixed(1)}`
   ).filter(Boolean).join(" ");
   const last = clean[clean.length - 1];
   const lastX = w, lastY = h - ((last - lo) / span) * (h - 4) - 2;
@@ -120,17 +163,21 @@ function spark(values, w = 108, h = 26) {
     <polyline points="${points}" fill="none" stroke="var(--accent)" stroke-width="1.25"
       stroke-linejoin="round" stroke-linecap="round"/>
     <circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="2" fill="var(--accent)"/>
+    ${hits(values, meta, x, 0, w, h, fmt.secs)}
   </svg>`;
 }
 
-// Within ±0.99% is noise, not signal — shown as a percentage like any other
-// delta (not a bare dot, which reads as a missing value), just in blue
-// instead of red/green so it doesn't compete with real regressions.
-function delta(now, before) {
-  if (now == null || before == null || !before) return "—";
-  const ratio = now / before - 1;
-  const cls = Math.abs(ratio) < 0.0099 ? "delta-flat" : ratio > 0 ? "delta-up" : "delta-down";
-  return `<span class="${cls}">${ratio > 0 ? "+" : ""}${fmt.pct(ratio)}</span>`;
+// Trailing mean over `window` runs. Trailing rather than centred: a centred
+// mean would let a run's own value be pulled by runs that came after it, which
+// reads as the past changing every time a new run lands. Positions without a
+// full window are null so the line simply starts once there is enough history.
+function rolling(values, window) {
+  return values.map((_, i) => {
+    if (i < window - 1) return null;
+    const slice = values.slice(i - window + 1, i + 1);
+    if (slice.some(v => v == null)) return null;
+    return slice.reduce((a, b) => a + b, 0) / window;
+  });
 }
 
 // A wider trend line for the fastest-run total across every recorded run
@@ -138,19 +185,36 @@ function delta(now, before) {
 // approach as spark(), with the scale's min/max labeled on the y-axis rather
 // than pinned to the chart's left/right edges, which would wrongly imply
 // "first run" and "last run" rather than "lowest value" and "highest value".
+// A trailing rolling mean is drawn over it: run-to-run noise on this suite is
+// a few percent, which is enough to hide the direction of travel in the raw
+// line.
+const AVG_WINDOW = 5;
+
 function suiteChart(history, w = 900, h = 140) {
   const values = history.map(run =>
     Object.values(run.totals).reduce((sum, t) => sum + (t.sum_min_ms || 0), 0));
   if (values.length < 2) return `<p class="empty">Not enough runs yet.</p>`;
+  const means = rolling(values, AVG_WINDOW);
+  const meta = history.map(run => ({
+    run_id: run.run_id,
+    engine: `${run.engine_version}+${run.engine_build}`,
+  }));
+  // The mean is bounded by the values it averages, so the raw series alone
+  // still fixes the scale.
   const lo = Math.min(...values), hi = Math.max(...values);
   const span = (hi - lo) || 1;
   const padL = 58, padR = 14, padT = 16, padB = 16;
   const step = (w - padL - padR) / (values.length - 1);
+  const x = i => padL + i * step;
   const y = v => h - padB - ((v - lo) / span) * (h - padT - padB);
-  const points = values.map((v, i) => `${(padL + i * step).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+  const points = values.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+  const avgPoints = means.map((v, i) => v == null ? null : `${x(i).toFixed(1)},${y(v).toFixed(1)}`)
+    .filter(Boolean).join(" ");
   const dots = values.map((v, i) =>
-    `<circle cx="${(padL + i * step).toFixed(1)}" cy="${y(v).toFixed(1)}" r="2.5" fill="var(--accent)"/>`
+    `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="2.5" fill="var(--accent)"/>`
   ).join("");
+  const targets = hits(values, meta, x, padL, w - padR, h, fmt.secs, (i, m) =>
+    means[i] == null ? m.engine : `${m.engine} · ${AVG_WINDOW}-run avg ${fmt.secs(means[i])}`);
   const axisLabel = (v, yPos) => `<text x="${(padL - 8).toFixed(1)}" y="${yPos.toFixed(1)}"
       class="axis-label" text-anchor="end" dominant-baseline="middle">${fmt.secs(v)}</text>`;
   return `
@@ -160,10 +224,16 @@ function suiteChart(history, w = 900, h = 140) {
             stroke="var(--rule)" stroke-width="1"/>
       ${axisLabel(lo, y(lo))}
       ${axisLabel(hi, y(hi))}
+      ${avgPoints ? `<polyline class="avg" points="${avgPoints}"/>` : ""}
       <polyline points="${points}" fill="none" stroke="var(--accent)" stroke-width="1.5"
                 stroke-linejoin="round" stroke-linecap="round"/>
       ${dots}
-    </svg>`;
+      ${targets}
+    </svg>
+    <div class="legend">
+      <span><i></i>Per-run total</span>
+      <span><i class="dash"></i>${AVG_WINDOW}-run rolling mean</span>
+    </div>`;
 }
 
 function render(index) {
@@ -175,8 +245,11 @@ function render(index) {
 
   // index.json is newest first; trends read oldest to newest.
   const latest = index[0];
-  const previous = index[1];
   const history = [...index].reverse();
+  const runMeta = history.map(run => ({
+    run_id: run.run_id,
+    engine: `${run.engine_version}+${run.engine_build}`,
+  }));
   const lines = Object.keys(latest.totals);
 
   const headline = `
@@ -187,21 +260,34 @@ function render(index) {
       <div><dt>Runs recorded</dt><dd>${index.length}</dd></div>
     </dl>`;
 
+  // The best and worst this benchmark has ever recorded, with the run that set
+  // it. Returned as an index into the series rather than a bare value so the
+  // cell can name the run — "fastest ever" is only actionable if you can see
+  // which build it was.
+  function extreme(series, pick) {
+    let best = -1;
+    series.forEach((v, i) => {
+      if (v == null) return;
+      if (best < 0 || pick(v, series[best])) best = i;
+    });
+    return best;
+  }
+
+  const record = (series, i) => i < 0
+    ? `<td class="n">—</td>`
+    : `<td class="n"><span ${tip(runMeta[i].run_id, fmt.secs(series[i]), runMeta[i].engine)}>${
+        fmt.secs(series[i])}</span></td>`;
+
   const rows = lines.map(line => {
     const total = latest.totals[line];
     const series = history.map(run => run.totals[line]?.sum_min_ms ?? null);
-    const before = previous?.totals[line]?.sum_min_ms;
-    // `crashed` (the process died — OOM killer, segfault) is a status of its
-    // own and older runs predate it, so it is read defensively. It MUST be
-    // counted: a failure the table does not add up is a failure nobody sees.
-    const failures = total.timeout + total.error + (total.crashed ?? 0);
     return `<tr>
       <td class="k">${line}</td>
       <td class="n">${fmt.secs(total.sum_min_ms)}</td>
-      <td class="n">${delta(total.sum_min_ms, before)}</td>
-      <td class="n">${spark(series)}</td>
-      <td class="n">${total.ok}/${total.queries}</td>
-      <td class="n">${failures ? `<span class="delta-up">${failures}</span>` : "—"}</td>
+      ${record(series, extreme(series, (v, b) => v < b))}
+      ${record(series, extreme(series, (v, b) => v > b))}
+      <td class="n">${spark(series, runMeta)}</td>
+      <td class="n">${total.queries}</td>
       <td class="n">${fmt.gb(total.peak_rss_bytes)}</td>
     </tr>`;
   }).join("");
@@ -221,8 +307,9 @@ function render(index) {
     <h2>Latest run, by benchmark</h2>
     <div class="scroller"><table>
       <thead><tr>
-        <th>Benchmark</th><th>Fastest run</th><th>vs prev</th><th>trend</th>
-        <th>ok</th><th>errors</th><th>peak RSS</th>
+        <th>Benchmark</th><th>This run</th>
+        <th>Fastest run</th><th>Slowest run</th><th>trend</th>
+        <th>Queries</th><th>peak RSS</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table></div>
@@ -234,6 +321,46 @@ function render(index) {
       <tbody>${runRows}</tbody>
     </table></div>`;
 }
+
+// One delegated handler for every [data-tip] hit target on the page: the
+// tooltip follows the cursor rather than anchoring to the target, because the
+// chart is drawn with preserveAspectRatio="none" and a target's on-screen box
+// is stretched horizontally out of proportion to the point it describes.
+(() => {
+  const el = document.getElementById("tip");
+  const PAD = 14;
+  let live = null;
+
+  const place = (ev) => {
+    const box = el.getBoundingClientRect();
+    let left = ev.clientX + PAD;
+    let top = ev.clientY - box.height - PAD;
+    if (left + box.width > window.innerWidth - 8) left = ev.clientX - box.width - PAD;
+    if (top < 8) top = ev.clientY + PAD;
+    el.style.left = `${Math.max(8, left)}px`;
+    el.style.top = `${top}px`;
+  };
+
+  document.addEventListener("mousemove", (ev) => {
+    const target = ev.target.closest?.("[data-tip]");
+    if (!target) {
+      if (live) { live = null; el.classList.remove("on"); }
+      return;
+    }
+    if (target !== live) {
+      live = target;
+      const [title, value, note] = target.getAttribute("data-tip").split("|");
+      el.innerHTML = `<b>${esc(title)}</b><br>${esc(value)}${note ? `<br><em>${esc(note)}</em>` : ""}`;
+      el.classList.add("on");
+    }
+    place(ev);
+  }, { passive: true });
+
+  // Touch and scroll both leave the tooltip stranded over content it no longer
+  // describes, so either one dismisses it.
+  document.addEventListener("scroll", () => { live = null; el.classList.remove("on"); },
+    { passive: true, capture: true });
+})();
 
 // cache:"no-store" is NOT optional. GitHub Pages serves this file with
 // `cache-control: max-age=600`, so a plain fetch shows a browser copy up to
