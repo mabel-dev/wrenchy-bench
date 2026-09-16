@@ -59,6 +59,12 @@
   .suspect { background:color-mix(in srgb, var(--signal) 18%, transparent);  color:var(--signal); }
   .failed  { background:color-mix(in srgb, var(--alarm) 15%, transparent);   color:var(--alarm); }
 
+  /* A run that set a new all-time best or worst. Colour alone is not a channel
+     everyone can read, so the cell also carries a tooltip naming the record it
+     broke and the mark it beat. */
+  .muted { color:var(--muted); }
+  .best  { color:var(--ok);    font-weight:600; }
+  .worst { color:var(--alarm); font-weight:600; }
   .spark { display:inline-block; vertical-align:middle; }
   .chart { display:block; width:100%; height:auto; }
   .axis-label { font-family:var(--mono); font-size:11px; fill:var(--muted); }
@@ -70,6 +76,7 @@
   .legend span { display:inline-flex; align-items:center; gap:7px; }
   .legend i { display:inline-block; width:18px; height:0; border-top:2px solid var(--accent); }
   .legend i.dash { border-top:2px dashed var(--muted); }
+  .legend i.dot { width:8px; height:8px; border:0; border-radius:50%; background:var(--ok); }
   /* The tooltip is fixed-positioned and pointer-events:none so it can never sit
      between the cursor and the next hit target it is describing. */
   #tip { position:fixed; z-index:10; pointer-events:none; opacity:0; transition:opacity .08s;
@@ -210,11 +217,29 @@ function suiteChart(history, w = 900, h = 140) {
   const points = values.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
   const avgPoints = means.map((v, i) => v == null ? null : `${x(i).toFixed(1)},${y(v).toFixed(1)}`)
     .filter(Boolean).join(" ");
-  const dots = values.map((v, i) =>
-    `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="2.5" fill="var(--accent)"/>`
+  // Runs that were an all-time best AT THE TIME. Marking every engine version
+  // change was the obvious way to tie speed to releases, but 27 of 28 run-to-run
+  // transitions in this history change version — a rule at each is a picket
+  // fence, not information. The record progression answers the same question
+  // ("which releases actually moved this?") and picks out a handful of runs.
+  const records = new Set();
+  values.reduce((best, v, i) => {
+    if (v != null && (best == null || v < best)) { records.add(i); return v; }
+    return best;
+  }, null);
+  // The first run is a record only in the trivial sense that nothing precedes it.
+  records.delete(0);
+
+  const dots = values.map((v, i) => records.has(i)
+    ? `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="4" fill="var(--ok)"/>`
+    : `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="2.5" fill="var(--accent)"/>`
   ).join("");
-  const targets = hits(values, meta, x, padL, w - padR, h, fmt.secs, (i, m) =>
-    means[i] == null ? m.engine : `${m.engine} · ${AVG_WINDOW}-run avg ${fmt.secs(means[i])}`);
+  const targets = hits(values, meta, x, padL, w - padR, h, fmt.secs, (i, m) => {
+    const parts = [m.engine];
+    if (means[i] != null) parts.push(`${AVG_WINDOW}-run avg ${fmt.secs(means[i])}`);
+    if (records.has(i)) parts.push("best so far");
+    return parts.join(" · ");
+  });
   const axisLabel = (v, yPos) => `<text x="${(padL - 8).toFixed(1)}" y="${yPos.toFixed(1)}"
       class="axis-label" text-anchor="end" dominant-baseline="middle">${fmt.secs(v)}</text>`;
   return `
@@ -233,6 +258,7 @@ function suiteChart(history, w = 900, h = 140) {
     <div class="legend">
       <span><i></i>Per-run total</span>
       <span><i class="dash"></i>${AVG_WINDOW}-run rolling mean</span>
+      <span><i class="dot"></i>Best so far</span>
     </div>`;
 }
 
@@ -273,22 +299,59 @@ function render(index) {
     return best;
   }
 
-  const record = (series, i) => i < 0
-    ? `<td class="n">—</td>`
-    : `<td class="n"><span ${tip(runMeta[i].run_id, fmt.secs(series[i]), runMeta[i].engine)}>${
-        fmt.secs(series[i])}</span></td>`;
+  // When the latest run holds the record, this cell would print the same number
+  // as "this run" two columns to its left, which reads as a rendering fault. The
+  // record is already announced there in colour, so the cell steps back to a
+  // muted marker rather than repeating it.
+  const record = (series, i) => {
+    if (i < 0) return `<td class="n">—</td>`;
+    if (i === series.length - 1 && series.filter(v => v != null).length > 1) {
+      return `<td class="n"><span class="muted"
+        ${tip(runMeta[i].run_id, fmt.secs(series[i]), "Set by this run")}>= this run</span></td>`;
+    }
+    return `<td class="n"><span ${tip(runMeta[i].run_id, fmt.secs(series[i]), runMeta[i].engine)}>${
+      fmt.secs(series[i])}</span></td>`;
+  };
+
+  // The "this run" cell calls out a record. Strictly beyond every prior value,
+  // so an exact repeat of the standing best is not announced as a new one — a
+  // record has to actually be broken. And it needs something to beat: in a
+  // history of one, that run is trivially both best and worst, which is not
+  // news. Generic over the formatter so the memory column gets the same
+  // treatment as the time column, only with its own words for the two ends.
+  const thisRun = (series, format = fmt.secs, labels = ["Fastest", "Slowest"]) => {
+    const now = series[series.length - 1];
+    const prior = series.slice(0, -1).filter(v => v != null);
+    const isBest  = now != null && prior.length > 0 && now < Math.min(...prior);
+    const isWorst = now != null && prior.length > 0 && now > Math.max(...prior);
+    if (!isBest && !isWorst) return `<td class="n">${format(now)}</td>`;
+    const beat = isBest ? Math.min(...prior) : Math.max(...prior);
+    const note = `${isBest ? labels[0] : labels[1]} of ${series.filter(v => v != null).length} runs`;
+    // A record can be won by less than the display precision — "14.9 GB beats
+    // 14.9 GB" reads as a bug. When the old mark rounds to the same string, the
+    // margin is what is worth saying instead.
+    const margin = Math.abs(now / beat - 1) * 100;
+    const versus = format(beat) === format(now)
+      ? `${format(now)} · by ${margin.toFixed(2)}%`
+      : `${format(now)} · beats ${format(beat)}`;
+    return `<td class="n"><span class="${isBest ? "best" : "worst"}"
+      ${tip(isBest ? "New best" : "New worst", versus, note)}>${format(now)}</span></td>`;
+  };
 
   const rows = lines.map(line => {
     const total = latest.totals[line];
     const series = history.map(run => run.totals[line]?.sum_min_ms ?? null);
+    const bestAt = extreme(series, (v, b) => v < b);
+    const worstAt = extreme(series, (v, b) => v > b);
     return `<tr>
       <td class="k">${line}</td>
-      <td class="n">${fmt.secs(total.sum_min_ms)}</td>
-      ${record(series, extreme(series, (v, b) => v < b))}
-      ${record(series, extreme(series, (v, b) => v > b))}
+      ${thisRun(series)}
+      ${record(series, bestAt)}
+      ${record(series, worstAt)}
       <td class="n">${spark(series, runMeta)}</td>
       <td class="n">${total.queries}</td>
-      <td class="n">${fmt.gb(total.peak_rss_bytes)}</td>
+      ${thisRun(history.map(run => run.totals[line]?.peak_rss_bytes ?? null),
+                fmt.gb, ["Lowest", "Highest"])}
     </tr>`;
   }).join("");
 
