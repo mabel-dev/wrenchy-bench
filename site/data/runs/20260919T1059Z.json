@@ -1,0 +1,2631 @@
+{
+ "calibration": {
+  "close_ms": 1363.550719,
+  "drift": 0.012543416577167768,
+  "open_ms": 1346.659014
+ },
+ "corpus_hashes": {
+  "h2o_skene": "37f36e126068ba2f609b5a8ced9267cc0a7f6dec6a90eee41ccc49c426af86b0",
+  "hits_partitioned": "52039988ebeb57e8d6c84bc723c5435323aa8dfe76ee8d579808ed93d8424f2b",
+  "hits_skene": "6396c1f60324a0a23d27132f6224b1c2b547a296083b8cad0db82d8b75ff38fd",
+  "job_skene": "8c28ebadfded22defc57e7fa34ed43bf23e4b04d8d52ad297d33180bab746134",
+  "tpch_100_skene": "0d382723da260a65bb0ba2ac3d2fb40d693b464feac5573a0c296c90d163a7b1",
+  "tpch_10_skene": "ea7f9df4b387c26b80663fe6eb1e031a320e6a420db62af3362c73b9bae4101b",
+  "tpch_1_skene": "4632913c7aedcaa140663fd4e25ddfdd38d9507ea640f87b5ce4df7834f4c191"
+ },
+ "engine_build": 3537,
+ "engine_version": "0.9.126",
+ "git_sha": null,
+ "instance_type": "c8g.4xlarge",
+ "lines": {
+  "clickbench_parquet": {
+   "q01": {
+    "column_count": 1,
+    "cpu_efficiency": 1.0484357821444013,
+    "min_ms": 4.248674,
+    "ordinal": 1,
+    "peak_rss_bytes": 107274240,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "q02": {
+    "column_count": 1,
+    "cpu_efficiency": 9.812003709236338,
+    "min_ms": 60.059802,
+    "ordinal": 2,
+    "peak_rss_bytes": 525381632,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "q03": {
+    "column_count": 3,
+    "cpu_efficiency": 11.701488493382577,
+    "min_ms": 86.187753,
+    "ordinal": 3,
+    "peak_rss_bytes": 731295744,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "q04": {
+    "column_count": 1,
+    "cpu_efficiency": 11.01508580361518,
+    "min_ms": 60.767661,
+    "ordinal": 4,
+    "peak_rss_bytes": 1179611136,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "q05": {
+    "column_count": 1,
+    "cpu_efficiency": 12.201744391463018,
+    "min_ms": 346.293027,
+    "ordinal": 5,
+    "peak_rss_bytes": 1718591488,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "q06": {
+    "column_count": 1,
+    "cpu_efficiency": 12.678696608531881,
+    "min_ms": 291.842696,
+    "ordinal": 6,
+    "peak_rss_bytes": 1479933952,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "q07": {
+    "column_count": 2,
+    "cpu_efficiency": 1.066504560623975,
+    "min_ms": 4.694865,
+    "ordinal": 7,
+    "peak_rss_bytes": 110104576,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "q08": {
+    "column_count": 2,
+    "cpu_efficiency": 10.171869982081104,
+    "min_ms": 58.381399,
+    "ordinal": 8,
+    "peak_rss_bytes": 544813056,
+    "row_count": 18,
+    "status": "ok"
+   },
+   "q09": {
+    "column_count": 2,
+    "cpu_efficiency": 8.147555383524404,
+    "min_ms": 440.74705,
+    "ordinal": 9,
+    "peak_rss_bytes": 2077097984,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q10": {
+    "column_count": 5,
+    "cpu_efficiency": 8.924663219979562,
+    "min_ms": 534.23284,
+    "ordinal": 10,
+    "peak_rss_bytes": 2174214144,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q11": {
+    "column_count": 2,
+    "cpu_efficiency": 8.041129486190428,
+    "min_ms": 132.814302,
+    "ordinal": 11,
+    "peak_rss_bytes": 1277730816,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q12": {
+    "column_count": 3,
+    "cpu_efficiency": 8.684373321762605,
+    "min_ms": 156.496036,
+    "ordinal": 12,
+    "peak_rss_bytes": 1317511168,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q13": {
+    "column_count": 2,
+    "cpu_efficiency": 12.231333190852796,
+    "min_ms": 362.76299,
+    "ordinal": 13,
+    "peak_rss_bytes": 3309477888,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q14": {
+    "column_count": 2,
+    "cpu_efficiency": 12.430592997832024,
+    "min_ms": 445.380922,
+    "ordinal": 14,
+    "peak_rss_bytes": 3769364480,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q15": {
+    "column_count": 3,
+    "cpu_efficiency": 12.59823946393685,
+    "min_ms": 397.599126,
+    "ordinal": 15,
+    "peak_rss_bytes": 3429081088,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q16": {
+    "column_count": 2,
+    "cpu_efficiency": 12.738367289774988,
+    "min_ms": 366.172987,
+    "ordinal": 16,
+    "peak_rss_bytes": 2789560320,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q17": {
+    "column_count": 3,
+    "cpu_efficiency": 11.882855255499909,
+    "min_ms": 846.527605,
+    "ordinal": 17,
+    "peak_rss_bytes": 5876088832,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q18": {
+    "column_count": 3,
+    "cpu_efficiency": 11.715949199115709,
+    "min_ms": 844.856002,
+    "ordinal": 18,
+    "peak_rss_bytes": 5938577408,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q19": {
+    "column_count": 4,
+    "cpu_efficiency": 12.872251478382466,
+    "min_ms": 1771.470027,
+    "ordinal": 19,
+    "peak_rss_bytes": 11073503232,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q20": {
+    "column_count": 1,
+    "cpu_efficiency": 6.013797545236522,
+    "min_ms": 30.098841,
+    "ordinal": 20,
+    "peak_rss_bytes": 729444352,
+    "row_count": 4,
+    "status": "ok"
+   },
+   "q21": {
+    "column_count": 1,
+    "cpu_efficiency": 14.55230530228604,
+    "min_ms": 895.050147,
+    "ordinal": 21,
+    "peak_rss_bytes": 3473321984,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "q22": {
+    "column_count": 3,
+    "cpu_efficiency": 14.581772821117829,
+    "min_ms": 1048.615363,
+    "ordinal": 22,
+    "peak_rss_bytes": 3879788544,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q23": {
+    "column_count": 5,
+    "cpu_efficiency": 14.660000150002679,
+    "min_ms": 1820.234156,
+    "ordinal": 23,
+    "peak_rss_bytes": 4254314496,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q24": {
+    "column_count": 105,
+    "cpu_efficiency": 8.721139712335617,
+    "min_ms": 1582.019834,
+    "ordinal": 24,
+    "peak_rss_bytes": 2664067072,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q25": {
+    "column_count": 1,
+    "cpu_efficiency": 13.260493978893157,
+    "min_ms": 273.100535,
+    "ordinal": 25,
+    "peak_rss_bytes": 1814712320,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q26": {
+    "column_count": 1,
+    "cpu_efficiency": 12.372742085451916,
+    "min_ms": 214.123028,
+    "ordinal": 26,
+    "peak_rss_bytes": 1486757888,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q27": {
+    "column_count": 1,
+    "cpu_efficiency": 12.887959702773214,
+    "min_ms": 277.885723,
+    "ordinal": 27,
+    "peak_rss_bytes": 1837740032,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q28": {
+    "column_count": 3,
+    "cpu_efficiency": 14.605278041318368,
+    "min_ms": 921.477288,
+    "ordinal": 28,
+    "peak_rss_bytes": 3289661440,
+    "row_count": 25,
+    "status": "ok"
+   },
+   "q29": {
+    "column_count": 4,
+    "cpu_efficiency": 14.575471977255969,
+    "min_ms": 1433.296502,
+    "ordinal": 29,
+    "peak_rss_bytes": 4340838400,
+    "row_count": 25,
+    "status": "ok"
+   },
+   "q30": {
+    "column_count": 90,
+    "cpu_efficiency": 5.605966810595866,
+    "min_ms": 124.463277,
+    "ordinal": 30,
+    "peak_rss_bytes": 576876544,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "q31": {
+    "column_count": 5,
+    "cpu_efficiency": 12.61985175325214,
+    "min_ms": 450.534341,
+    "ordinal": 31,
+    "peak_rss_bytes": 2390450176,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q32": {
+    "column_count": 5,
+    "cpu_efficiency": 12.707805079961751,
+    "min_ms": 562.101634,
+    "ordinal": 32,
+    "peak_rss_bytes": 3368103936,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q33": {
+    "column_count": 5,
+    "cpu_efficiency": 12.939882710464072,
+    "min_ms": 2596.191065,
+    "ordinal": 33,
+    "peak_rss_bytes": 15181467648,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q34": {
+    "column_count": 2,
+    "cpu_efficiency": 13.46790311074548,
+    "min_ms": 1555.797872,
+    "ordinal": 34,
+    "peak_rss_bytes": 11399245824,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q35": {
+    "column_count": 3,
+    "cpu_efficiency": 13.349078548686167,
+    "min_ms": 1570.817935,
+    "ordinal": 35,
+    "peak_rss_bytes": 11473051648,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q36": {
+    "column_count": 5,
+    "cpu_efficiency": 12.876635659382526,
+    "min_ms": 329.43442,
+    "ordinal": 36,
+    "peak_rss_bytes": 2463203328,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q37": {
+    "column_count": 2,
+    "cpu_efficiency": 2.6413847387519076,
+    "min_ms": 135.023855,
+    "ordinal": 37,
+    "peak_rss_bytes": 889729024,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q38": {
+    "column_count": 2,
+    "cpu_efficiency": 1.9780262480874096,
+    "min_ms": 72.600162,
+    "ordinal": 38,
+    "peak_rss_bytes": 409243648,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q39": {
+    "column_count": 2,
+    "cpu_efficiency": 2.3758672707987016,
+    "min_ms": 113.842585,
+    "ordinal": 39,
+    "peak_rss_bytes": 620453888,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q40": {
+    "column_count": 6,
+    "cpu_efficiency": 2.5044699074337102,
+    "min_ms": 292.568194,
+    "ordinal": 40,
+    "peak_rss_bytes": 1070821376,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q41": {
+    "column_count": 3,
+    "cpu_efficiency": 1.7626988388418152,
+    "min_ms": 43.987871,
+    "ordinal": 41,
+    "peak_rss_bytes": 369864704,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q42": {
+    "column_count": 3,
+    "cpu_efficiency": 1.7374950214197238,
+    "min_ms": 39.998479,
+    "ordinal": 42,
+    "peak_rss_bytes": 358019072,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q43": {
+    "column_count": 2,
+    "cpu_efficiency": 1.834743366320425,
+    "min_ms": 43.027716,
+    "ordinal": 43,
+    "peak_rss_bytes": 338673664,
+    "row_count": 10,
+    "status": "ok"
+   }
+  },
+  "clickbench_skene": {
+   "q01": {
+    "column_count": 1,
+    "cpu_efficiency": 1.04284844748084,
+    "min_ms": 4.287562,
+    "ordinal": 1,
+    "peak_rss_bytes": 85344256,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "q02": {
+    "column_count": 1,
+    "cpu_efficiency": 10.965361314014503,
+    "min_ms": 57.201072,
+    "ordinal": 2,
+    "peak_rss_bytes": 259137536,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "q03": {
+    "column_count": 3,
+    "cpu_efficiency": 11.311961002132445,
+    "min_ms": 76.222985,
+    "ordinal": 3,
+    "peak_rss_bytes": 406228992,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "q04": {
+    "column_count": 1,
+    "cpu_efficiency": 10.512562231407792,
+    "min_ms": 59.166296,
+    "ordinal": 4,
+    "peak_rss_bytes": 459366400,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "q05": {
+    "column_count": 1,
+    "cpu_efficiency": 12.764014621427592,
+    "min_ms": 314.567095,
+    "ordinal": 5,
+    "peak_rss_bytes": 1229049856,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "q06": {
+    "column_count": 1,
+    "cpu_efficiency": 12.0936444303826,
+    "min_ms": 190.539255,
+    "ordinal": 6,
+    "peak_rss_bytes": 1126178816,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "q07": {
+    "column_count": 2,
+    "cpu_efficiency": 1.0584950640478903,
+    "min_ms": 4.920773,
+    "ordinal": 7,
+    "peak_rss_bytes": 90710016,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "q08": {
+    "column_count": 2,
+    "cpu_efficiency": 10.796709972897876,
+    "min_ms": 58.223107,
+    "ordinal": 8,
+    "peak_rss_bytes": 299663360,
+    "row_count": 18,
+    "status": "ok"
+   },
+   "q09": {
+    "column_count": 2,
+    "cpu_efficiency": 7.628517251080969,
+    "min_ms": 446.407852,
+    "ordinal": 9,
+    "peak_rss_bytes": 1908219904,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q10": {
+    "column_count": 5,
+    "cpu_efficiency": 8.091960553867096,
+    "min_ms": 550.424106,
+    "ordinal": 10,
+    "peak_rss_bytes": 2015514624,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q11": {
+    "column_count": 2,
+    "cpu_efficiency": 7.453785795439793,
+    "min_ms": 126.940192,
+    "ordinal": 11,
+    "peak_rss_bytes": 916041728,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q12": {
+    "column_count": 3,
+    "cpu_efficiency": 8.235269679656184,
+    "min_ms": 140.860718,
+    "ordinal": 12,
+    "peak_rss_bytes": 939089920,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q13": {
+    "column_count": 2,
+    "cpu_efficiency": 11.852469267826152,
+    "min_ms": 311.700534,
+    "ordinal": 13,
+    "peak_rss_bytes": 3115024384,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q14": {
+    "column_count": 2,
+    "cpu_efficiency": 12.386447893991022,
+    "min_ms": 386.62537,
+    "ordinal": 14,
+    "peak_rss_bytes": 3781636096,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q15": {
+    "column_count": 3,
+    "cpu_efficiency": 12.390236649957753,
+    "min_ms": 347.588357,
+    "ordinal": 15,
+    "peak_rss_bytes": 3313512448,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q16": {
+    "column_count": 2,
+    "cpu_efficiency": 12.073860340764321,
+    "min_ms": 380.371221,
+    "ordinal": 16,
+    "peak_rss_bytes": 2649653248,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q17": {
+    "column_count": 3,
+    "cpu_efficiency": 12.503489326542226,
+    "min_ms": 786.176062,
+    "ordinal": 17,
+    "peak_rss_bytes": 6133510144,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q18": {
+    "column_count": 3,
+    "cpu_efficiency": 12.537358330413078,
+    "min_ms": 779.405816,
+    "ordinal": 18,
+    "peak_rss_bytes": 6144208896,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q19": {
+    "column_count": 4,
+    "cpu_efficiency": 11.937026616621928,
+    "min_ms": 1866.643488,
+    "ordinal": 19,
+    "peak_rss_bytes": 11613224960,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q20": {
+    "column_count": 1,
+    "cpu_efficiency": 9.19452396084009,
+    "min_ms": 39.556209,
+    "ordinal": 20,
+    "peak_rss_bytes": 372781056,
+    "row_count": 4,
+    "status": "ok"
+   },
+   "q21": {
+    "column_count": 1,
+    "cpu_efficiency": 11.772006262745558,
+    "min_ms": 340.847349,
+    "ordinal": 21,
+    "peak_rss_bytes": 3489902592,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "q22": {
+    "column_count": 3,
+    "cpu_efficiency": 11.894996811474371,
+    "min_ms": 400.202209,
+    "ordinal": 22,
+    "peak_rss_bytes": 3794259968,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q23": {
+    "column_count": 5,
+    "cpu_efficiency": 11.616481987104592,
+    "min_ms": 678.589982,
+    "ordinal": 23,
+    "peak_rss_bytes": 5226741760,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q24": {
+    "column_count": 105,
+    "cpu_efficiency": 10.964522449204312,
+    "min_ms": 459.535777,
+    "ordinal": 24,
+    "peak_rss_bytes": 4050448384,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q25": {
+    "column_count": 1,
+    "cpu_efficiency": 11.44701069226309,
+    "min_ms": 156.727331,
+    "ordinal": 25,
+    "peak_rss_bytes": 1423400960,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q26": {
+    "column_count": 1,
+    "cpu_efficiency": 11.527898525836523,
+    "min_ms": 126.844927,
+    "ordinal": 26,
+    "peak_rss_bytes": 923791360,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q27": {
+    "column_count": 1,
+    "cpu_efficiency": 11.548568385092528,
+    "min_ms": 164.927802,
+    "ordinal": 27,
+    "peak_rss_bytes": 1391517696,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q28": {
+    "column_count": 3,
+    "cpu_efficiency": 11.380616109890592,
+    "min_ms": 244.015053,
+    "ordinal": 28,
+    "peak_rss_bytes": 2559893504,
+    "row_count": 25,
+    "status": "ok"
+   },
+   "q29": {
+    "column_count": 4,
+    "cpu_efficiency": 13.311071136587858,
+    "min_ms": 1191.171457,
+    "ordinal": 29,
+    "peak_rss_bytes": 5443133440,
+    "row_count": 25,
+    "status": "ok"
+   },
+   "q30": {
+    "column_count": 90,
+    "cpu_efficiency": 5.24270455187272,
+    "min_ms": 112.21689,
+    "ordinal": 30,
+    "peak_rss_bytes": 344846336,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "q31": {
+    "column_count": 5,
+    "cpu_efficiency": 12.019703442308668,
+    "min_ms": 286.067374,
+    "ordinal": 31,
+    "peak_rss_bytes": 2579943424,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q32": {
+    "column_count": 5,
+    "cpu_efficiency": 10.366611841588439,
+    "min_ms": 444.579393,
+    "ordinal": 32,
+    "peak_rss_bytes": 4374478848,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q33": {
+    "column_count": 5,
+    "cpu_efficiency": 12.66719824169714,
+    "min_ms": 2496.775236,
+    "ordinal": 33,
+    "peak_rss_bytes": 16205778944,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q34": {
+    "column_count": 2,
+    "cpu_efficiency": 11.67955563575459,
+    "min_ms": 1257.953595,
+    "ordinal": 34,
+    "peak_rss_bytes": 13150818304,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q35": {
+    "column_count": 3,
+    "cpu_efficiency": 11.722157083214217,
+    "min_ms": 1262.515467,
+    "ordinal": 35,
+    "peak_rss_bytes": 12974096384,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q36": {
+    "column_count": 5,
+    "cpu_efficiency": 12.338668491725407,
+    "min_ms": 321.944706,
+    "ordinal": 36,
+    "peak_rss_bytes": 2178781184,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q37": {
+    "column_count": 2,
+    "cpu_efficiency": 3.4308686383242217,
+    "min_ms": 63.215953,
+    "ordinal": 37,
+    "peak_rss_bytes": 815198208,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q38": {
+    "column_count": 2,
+    "cpu_efficiency": 2.6807691096596615,
+    "min_ms": 27.66943,
+    "ordinal": 38,
+    "peak_rss_bytes": 332419072,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q39": {
+    "column_count": 2,
+    "cpu_efficiency": 2.836363444573695,
+    "min_ms": 31.648309,
+    "ordinal": 39,
+    "peak_rss_bytes": 520933376,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q40": {
+    "column_count": 6,
+    "cpu_efficiency": 2.9147011221019388,
+    "min_ms": 170.366696,
+    "ordinal": 40,
+    "peak_rss_bytes": 1054044160,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q41": {
+    "column_count": 3,
+    "cpu_efficiency": 2.3707327792133,
+    "min_ms": 22.480146,
+    "ordinal": 41,
+    "peak_rss_bytes": 271777792,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q42": {
+    "column_count": 3,
+    "cpu_efficiency": 2.4860855496946943,
+    "min_ms": 19.156517,
+    "ordinal": 42,
+    "peak_rss_bytes": 280928256,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q43": {
+    "column_count": 2,
+    "cpu_efficiency": 2.7296095495779675,
+    "min_ms": 24.205408,
+    "ordinal": 43,
+    "peak_rss_bytes": 248504320,
+    "row_count": 10,
+    "status": "ok"
+   }
+  },
+  "h2o_skene": {
+   "g1": {
+    "column_count": 2,
+    "cpu_efficiency": 11.577611878125076,
+    "min_ms": 61.167364,
+    "ordinal": 1,
+    "peak_rss_bytes": 425824256,
+    "row_count": 100,
+    "status": "ok"
+   },
+   "g10": {
+    "column_count": 8,
+    "cpu_efficiency": 9.61973300611839,
+    "min_ms": 4623.248082,
+    "ordinal": 10,
+    "peak_rss_bytes": 25049833472,
+    "row_count": 100000000,
+    "status": "ok"
+   },
+   "g2": {
+    "column_count": 3,
+    "cpu_efficiency": 13.145236805689349,
+    "min_ms": 200.060755,
+    "ordinal": 2,
+    "peak_rss_bytes": 592019456,
+    "row_count": 10000,
+    "status": "ok"
+   },
+   "g3": {
+    "column_count": 3,
+    "cpu_efficiency": 11.497722047808054,
+    "min_ms": 1290.793771,
+    "ordinal": 3,
+    "peak_rss_bytes": 11456016384,
+    "row_count": 1000000,
+    "status": "ok"
+   },
+   "g4": {
+    "column_count": 4,
+    "cpu_efficiency": 11.56134289541246,
+    "min_ms": 139.805137,
+    "ordinal": 4,
+    "peak_rss_bytes": 1390452736,
+    "row_count": 100,
+    "status": "ok"
+   },
+   "g5": {
+    "column_count": 4,
+    "cpu_efficiency": 11.632504378253467,
+    "min_ms": 1289.13747,
+    "ordinal": 5,
+    "peak_rss_bytes": 11585409024,
+    "row_count": 1000000,
+    "status": "ok"
+   },
+   "g6": {
+    "column_count": 4,
+    "cpu_efficiency": 12.851973445227559,
+    "min_ms": 462.059467,
+    "ordinal": 6,
+    "peak_rss_bytes": 2896216064,
+    "row_count": 10000,
+    "status": "ok"
+   },
+   "g7": {
+    "column_count": 2,
+    "cpu_efficiency": 12.358430939281895,
+    "min_ms": 1260.686739,
+    "ordinal": 7,
+    "peak_rss_bytes": 12278165504,
+    "row_count": 1000000,
+    "status": "ok"
+   },
+   "g8": {
+    "column_count": 2,
+    "cpu_efficiency": 13.135727434637118,
+    "min_ms": 2480.172326,
+    "ordinal": 8,
+    "peak_rss_bytes": 4472520704,
+    "row_count": 2000000,
+    "status": "ok"
+   },
+   "g9": {
+    "column_count": 3,
+    "cpu_efficiency": 13.212365267231124,
+    "min_ms": 283.509047,
+    "ordinal": 9,
+    "peak_rss_bytes": 731521024,
+    "row_count": 10000,
+    "status": "ok"
+   },
+   "j1": {
+    "column_count": 9,
+    "cpu_efficiency": 6.6396449884415984,
+    "min_ms": 1835.601756,
+    "ordinal": 11,
+    "peak_rss_bytes": 3556585472,
+    "row_count": 90003032,
+    "status": "ok"
+   },
+   "j2": {
+    "column_count": 11,
+    "cpu_efficiency": 7.96045860468184,
+    "min_ms": 2322.975587,
+    "ordinal": 12,
+    "peak_rss_bytes": 3516563456,
+    "row_count": 89999107,
+    "status": "ok"
+   },
+   "j3": {
+    "column_count": 11,
+    "cpu_efficiency": 6.631681040796903,
+    "min_ms": 3346.737799,
+    "ordinal": 13,
+    "peak_rss_bytes": 3436138496,
+    "row_count": 100000000,
+    "status": "ok"
+   },
+   "j4": {
+    "column_count": 11,
+    "cpu_efficiency": 10.084849159175318,
+    "min_ms": 1938.597761,
+    "ordinal": 14,
+    "peak_rss_bytes": 3532660736,
+    "row_count": 89999107,
+    "status": "ok"
+   },
+   "j5": {
+    "column_count": 13,
+    "cpu_efficiency": 12.93235961012335,
+    "min_ms": 5924.86498,
+    "ordinal": 15,
+    "peak_rss_bytes": 13305139200,
+    "row_count": 90000000,
+    "status": "ok"
+   }
+  },
+  "job_skene": {
+   "10a": {
+    "column_count": 2,
+    "cpu_efficiency": 6.0928575265447895,
+    "min_ms": 73.999925,
+    "ordinal": 35,
+    "peak_rss_bytes": 767090688,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "10b": {
+    "column_count": 2,
+    "cpu_efficiency": 5.724377851989632,
+    "min_ms": 67.430584,
+    "ordinal": 36,
+    "peak_rss_bytes": 759222272,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "10c": {
+    "column_count": 2,
+    "cpu_efficiency": 6.557669323636994,
+    "min_ms": 149.107549,
+    "ordinal": 37,
+    "peak_rss_bytes": 1012109312,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "11a": {
+    "column_count": 3,
+    "cpu_efficiency": 1.1495591038489812,
+    "min_ms": 77.916495,
+    "ordinal": 38,
+    "peak_rss_bytes": 282034176,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "11b": {
+    "column_count": 3,
+    "cpu_efficiency": 1.1511262425174023,
+    "min_ms": 75.800548,
+    "ordinal": 39,
+    "peak_rss_bytes": 249733120,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "11c": {
+    "column_count": 3,
+    "cpu_efficiency": 1.2630200479150993,
+    "min_ms": 73.908174,
+    "ordinal": 40,
+    "peak_rss_bytes": 372555776,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "11d": {
+    "column_count": 3,
+    "cpu_efficiency": 1.2556095432726335,
+    "min_ms": 68.927594,
+    "ordinal": 41,
+    "peak_rss_bytes": 362401792,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "12a": {
+    "column_count": 3,
+    "cpu_efficiency": 3.707932121207618,
+    "min_ms": 80.763075,
+    "ordinal": 42,
+    "peak_rss_bytes": 663166976,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "12b": {
+    "column_count": 2,
+    "cpu_efficiency": 3.8732972932891108,
+    "min_ms": 112.742185,
+    "ordinal": 43,
+    "peak_rss_bytes": 585097216,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "12c": {
+    "column_count": 3,
+    "cpu_efficiency": 3.9569551757253114,
+    "min_ms": 90.256519,
+    "ordinal": 44,
+    "peak_rss_bytes": 709296128,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "13a": {
+    "column_count": 3,
+    "cpu_efficiency": 3.309552907786313,
+    "min_ms": 162.694792,
+    "ordinal": 45,
+    "peak_rss_bytes": 1165647872,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "13b": {
+    "column_count": 3,
+    "cpu_efficiency": 3.5526001660982653,
+    "min_ms": 141.30944,
+    "ordinal": 46,
+    "peak_rss_bytes": 678817792,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "13c": {
+    "column_count": 3,
+    "cpu_efficiency": 3.316417432530532,
+    "min_ms": 140.322806,
+    "ordinal": 47,
+    "peak_rss_bytes": 674865152,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "13d": {
+    "column_count": 3,
+    "cpu_efficiency": 4.09088633533702,
+    "min_ms": 151.910845,
+    "ordinal": 48,
+    "peak_rss_bytes": 814907392,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "14a": {
+    "column_count": 2,
+    "cpu_efficiency": 5.541279370762149,
+    "min_ms": 167.929631,
+    "ordinal": 49,
+    "peak_rss_bytes": 1728507904,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "14b": {
+    "column_count": 2,
+    "cpu_efficiency": 5.352003398777655,
+    "min_ms": 151.762796,
+    "ordinal": 50,
+    "peak_rss_bytes": 1629048832,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "14c": {
+    "column_count": 2,
+    "cpu_efficiency": 3.521831273909032,
+    "min_ms": 175.484174,
+    "ordinal": 51,
+    "peak_rss_bytes": 1003978752,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "15a": {
+    "column_count": 2,
+    "cpu_efficiency": 4.846944775415611,
+    "min_ms": 189.883946,
+    "ordinal": 52,
+    "peak_rss_bytes": 1619308544,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "15b": {
+    "column_count": 2,
+    "cpu_efficiency": 4.931807063227311,
+    "min_ms": 174.728527,
+    "ordinal": 53,
+    "peak_rss_bytes": 1591336960,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "15c": {
+    "column_count": 2,
+    "cpu_efficiency": 3.3560347908253614,
+    "min_ms": 253.508099,
+    "ordinal": 54,
+    "peak_rss_bytes": 1259048960,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "15d": {
+    "column_count": 2,
+    "cpu_efficiency": 3.5006180682272854,
+    "min_ms": 209.208935,
+    "ordinal": 55,
+    "peak_rss_bytes": 821321728,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "16a": {
+    "column_count": 2,
+    "cpu_efficiency": 7.814793736202273,
+    "min_ms": 147.892579,
+    "ordinal": 56,
+    "peak_rss_bytes": 668336128,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "16b": {
+    "column_count": 2,
+    "cpu_efficiency": 6.356019786179169,
+    "min_ms": 316.238317,
+    "ordinal": 57,
+    "peak_rss_bytes": 1408712704,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "16c": {
+    "column_count": 2,
+    "cpu_efficiency": 7.24278423937029,
+    "min_ms": 161.978731,
+    "ordinal": 58,
+    "peak_rss_bytes": 987291648,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "16d": {
+    "column_count": 2,
+    "cpu_efficiency": 7.469846996572448,
+    "min_ms": 162.598645,
+    "ordinal": 59,
+    "peak_rss_bytes": 964997120,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "17a": {
+    "column_count": 2,
+    "cpu_efficiency": 7.640363790654827,
+    "min_ms": 152.88683,
+    "ordinal": 60,
+    "peak_rss_bytes": 812261376,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "17b": {
+    "column_count": 2,
+    "cpu_efficiency": 8.502812402342508,
+    "min_ms": 133.373326,
+    "ordinal": 61,
+    "peak_rss_bytes": 814972928,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "17c": {
+    "column_count": 2,
+    "cpu_efficiency": 8.74203853833569,
+    "min_ms": 131.13955,
+    "ordinal": 62,
+    "peak_rss_bytes": 761516032,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "17d": {
+    "column_count": 1,
+    "cpu_efficiency": 7.575806325637709,
+    "min_ms": 198.072309,
+    "ordinal": 63,
+    "peak_rss_bytes": 1104863232,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "17e": {
+    "column_count": 1,
+    "cpu_efficiency": 8.151962702831874,
+    "min_ms": 165.763148,
+    "ordinal": 64,
+    "peak_rss_bytes": 845484032,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "17f": {
+    "column_count": 1,
+    "cpu_efficiency": 7.433445069370477,
+    "min_ms": 207.713649,
+    "ordinal": 65,
+    "peak_rss_bytes": 1089048576,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "18a": {
+    "column_count": 3,
+    "cpu_efficiency": 7.129329054106327,
+    "min_ms": 219.320919,
+    "ordinal": 66,
+    "peak_rss_bytes": 1894084608,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "18b": {
+    "column_count": 3,
+    "cpu_efficiency": 6.639595232970798,
+    "min_ms": 181.130168,
+    "ordinal": 67,
+    "peak_rss_bytes": 1580597248,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "18c": {
+    "column_count": 3,
+    "cpu_efficiency": 6.744377331221107,
+    "min_ms": 189.72085,
+    "ordinal": 68,
+    "peak_rss_bytes": 1714470912,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "19a": {
+    "column_count": 2,
+    "cpu_efficiency": 6.413333203776603,
+    "min_ms": 258.110868,
+    "ordinal": 69,
+    "peak_rss_bytes": 1990242304,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "19b": {
+    "column_count": 2,
+    "cpu_efficiency": 5.769152169096721,
+    "min_ms": 252.813231,
+    "ordinal": 70,
+    "peak_rss_bytes": 1954889728,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "19c": {
+    "column_count": 2,
+    "cpu_efficiency": 6.550520369769626,
+    "min_ms": 253.503677,
+    "ordinal": 71,
+    "peak_rss_bytes": 1939623936,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "19d": {
+    "column_count": 2,
+    "cpu_efficiency": 3.4316160327999174,
+    "min_ms": 1497.738369,
+    "ordinal": 72,
+    "peak_rss_bytes": 6386585600,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "1a": {
+    "column_count": 3,
+    "cpu_efficiency": 2.4509749121751154,
+    "min_ms": 39.806201,
+    "ordinal": 1,
+    "peak_rss_bytes": 419188736,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "1b": {
+    "column_count": 3,
+    "cpu_efficiency": 2.587254030148987,
+    "min_ms": 40.939942,
+    "ordinal": 2,
+    "peak_rss_bytes": 415285248,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "1c": {
+    "column_count": 3,
+    "cpu_efficiency": 4.025828782221439,
+    "min_ms": 41.873881,
+    "ordinal": 3,
+    "peak_rss_bytes": 652226560,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "1d": {
+    "column_count": 3,
+    "cpu_efficiency": 2.631017079222569,
+    "min_ms": 42.700597,
+    "ordinal": 4,
+    "peak_rss_bytes": 371478528,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "20a": {
+    "column_count": 1,
+    "cpu_efficiency": 7.942582705089338,
+    "min_ms": 207.979704,
+    "ordinal": 73,
+    "peak_rss_bytes": 1045983232,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "20b": {
+    "column_count": 1,
+    "cpu_efficiency": 6.7392849587917185,
+    "min_ms": 212.899374,
+    "ordinal": 74,
+    "peak_rss_bytes": 852426752,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "20c": {
+    "column_count": 2,
+    "cpu_efficiency": 7.716535035081551,
+    "min_ms": 176.477654,
+    "ordinal": 75,
+    "peak_rss_bytes": 759738368,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "21a": {
+    "column_count": 3,
+    "cpu_efficiency": 2.727196944621854,
+    "min_ms": 175.774309,
+    "ordinal": 76,
+    "peak_rss_bytes": 1401339904,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "21b": {
+    "column_count": 3,
+    "cpu_efficiency": 2.5275985968074868,
+    "min_ms": 174.076446,
+    "ordinal": 77,
+    "peak_rss_bytes": 1333714944,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "21c": {
+    "column_count": 3,
+    "cpu_efficiency": 2.358882862961797,
+    "min_ms": 231.227675,
+    "ordinal": 78,
+    "peak_rss_bytes": 1319514112,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "22a": {
+    "column_count": 3,
+    "cpu_efficiency": 4.208510918844338,
+    "min_ms": 301.523989,
+    "ordinal": 79,
+    "peak_rss_bytes": 2026180608,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "22b": {
+    "column_count": 3,
+    "cpu_efficiency": 4.494094730740163,
+    "min_ms": 221.75074,
+    "ordinal": 80,
+    "peak_rss_bytes": 1723060224,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "22c": {
+    "column_count": 3,
+    "cpu_efficiency": 5.110794086952459,
+    "min_ms": 301.95867,
+    "ordinal": 81,
+    "peak_rss_bytes": 1897635840,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "22d": {
+    "column_count": 3,
+    "cpu_efficiency": 3.18131307768643,
+    "min_ms": 233.648491,
+    "ordinal": 82,
+    "peak_rss_bytes": 1037426688,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "23a": {
+    "column_count": 2,
+    "cpu_efficiency": 3.9344318853115294,
+    "min_ms": 250.315936,
+    "ordinal": 83,
+    "peak_rss_bytes": 1625665536,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "23b": {
+    "column_count": 2,
+    "cpu_efficiency": 4.698880774067249,
+    "min_ms": 204.438258,
+    "ordinal": 84,
+    "peak_rss_bytes": 1624055808,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "23c": {
+    "column_count": 2,
+    "cpu_efficiency": 3.190567752368276,
+    "min_ms": 241.382723,
+    "ordinal": 85,
+    "peak_rss_bytes": 1075781632,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "24a": {
+    "column_count": 3,
+    "cpu_efficiency": 5.529778744222231,
+    "min_ms": 338.088753,
+    "ordinal": 86,
+    "peak_rss_bytes": 2060521472,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "24b": {
+    "column_count": 3,
+    "cpu_efficiency": 4.091042381558793,
+    "min_ms": 277.854858,
+    "ordinal": 87,
+    "peak_rss_bytes": 1726951424,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "25a": {
+    "column_count": 4,
+    "cpu_efficiency": 5.4223939648780926,
+    "min_ms": 255.401767,
+    "ordinal": 88,
+    "peak_rss_bytes": 1674665984,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "25b": {
+    "column_count": 4,
+    "cpu_efficiency": 5.8627267277314195,
+    "min_ms": 211.476171,
+    "ordinal": 89,
+    "peak_rss_bytes": 1593630720,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "25c": {
+    "column_count": 4,
+    "cpu_efficiency": 4.504853673190285,
+    "min_ms": 478.472367,
+    "ordinal": 90,
+    "peak_rss_bytes": 1871298560,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "26a": {
+    "column_count": 4,
+    "cpu_efficiency": 6.414676593592964,
+    "min_ms": 232.208433,
+    "ordinal": 91,
+    "peak_rss_bytes": 706293760,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "26b": {
+    "column_count": 3,
+    "cpu_efficiency": 6.827763333390639,
+    "min_ms": 221.383186,
+    "ordinal": 92,
+    "peak_rss_bytes": 663699456,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "26c": {
+    "column_count": 3,
+    "cpu_efficiency": 6.33994228458819,
+    "min_ms": 228.480605,
+    "ordinal": 93,
+    "peak_rss_bytes": 718839808,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "27a": {
+    "column_count": 3,
+    "cpu_efficiency": 2.6382875326440134,
+    "min_ms": 181.51089,
+    "ordinal": 94,
+    "peak_rss_bytes": 1260408832,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "27b": {
+    "column_count": 3,
+    "cpu_efficiency": 2.673631078734795,
+    "min_ms": 178.486854,
+    "ordinal": 95,
+    "peak_rss_bytes": 1262735360,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "27c": {
+    "column_count": 3,
+    "cpu_efficiency": 2.650897237274501,
+    "min_ms": 192.911655,
+    "ordinal": 96,
+    "peak_rss_bytes": 1280483328,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "28a": {
+    "column_count": 3,
+    "cpu_efficiency": 4.544004698928315,
+    "min_ms": 274.617202,
+    "ordinal": 97,
+    "peak_rss_bytes": 1805127680,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "28b": {
+    "column_count": 3,
+    "cpu_efficiency": 4.253552343313747,
+    "min_ms": 223.695269,
+    "ordinal": 98,
+    "peak_rss_bytes": 1658200064,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "28c": {
+    "column_count": 3,
+    "cpu_efficiency": 4.736488984181541,
+    "min_ms": 284.627285,
+    "ordinal": 99,
+    "peak_rss_bytes": 1884561408,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "29a": {
+    "column_count": 3,
+    "cpu_efficiency": 5.496898931748245,
+    "min_ms": 314.658505,
+    "ordinal": 100,
+    "peak_rss_bytes": 1832783872,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "29b": {
+    "column_count": 3,
+    "cpu_efficiency": 5.190595083585356,
+    "min_ms": 284.246624,
+    "ordinal": 101,
+    "peak_rss_bytes": 1610842112,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "29c": {
+    "column_count": 3,
+    "cpu_efficiency": 5.592259193363461,
+    "min_ms": 322.089327,
+    "ordinal": 102,
+    "peak_rss_bytes": 2015858688,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "2a": {
+    "column_count": 1,
+    "cpu_efficiency": 4.949635202035794,
+    "min_ms": 51.082712,
+    "ordinal": 5,
+    "peak_rss_bytes": 568860672,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "2b": {
+    "column_count": 1,
+    "cpu_efficiency": 4.798478597924208,
+    "min_ms": 50.355707,
+    "ordinal": 6,
+    "peak_rss_bytes": 576684032,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "2c": {
+    "column_count": 1,
+    "cpu_efficiency": 4.809501173030112,
+    "min_ms": 48.925332,
+    "ordinal": 7,
+    "peak_rss_bytes": 594841600,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "2d": {
+    "column_count": 1,
+    "cpu_efficiency": 4.364018871736633,
+    "min_ms": 58.384028,
+    "ordinal": 8,
+    "peak_rss_bytes": 637485056,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "30a": {
+    "column_count": 4,
+    "cpu_efficiency": 5.799463329959084,
+    "min_ms": 251.649827,
+    "ordinal": 103,
+    "peak_rss_bytes": 1670934528,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "30b": {
+    "column_count": 4,
+    "cpu_efficiency": 5.909087740543957,
+    "min_ms": 250.760196,
+    "ordinal": 104,
+    "peak_rss_bytes": 1682780160,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "30c": {
+    "column_count": 4,
+    "cpu_efficiency": 5.939226714508575,
+    "min_ms": 256.184866,
+    "ordinal": 105,
+    "peak_rss_bytes": 1740943360,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "31a": {
+    "column_count": 4,
+    "cpu_efficiency": 4.650114279012325,
+    "min_ms": 371.609792,
+    "ordinal": 106,
+    "peak_rss_bytes": 1706172416,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "31b": {
+    "column_count": 4,
+    "cpu_efficiency": 5.232563832571695,
+    "min_ms": 269.913573,
+    "ordinal": 107,
+    "peak_rss_bytes": 1586675712,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "31c": {
+    "column_count": 4,
+    "cpu_efficiency": 4.269494983895987,
+    "min_ms": 538.144443,
+    "ordinal": 108,
+    "peak_rss_bytes": 1757396992,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "32a": {
+    "column_count": 3,
+    "cpu_efficiency": 3.250937142936838,
+    "min_ms": 36.96531,
+    "ordinal": 109,
+    "peak_rss_bytes": 416215040,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "32b": {
+    "column_count": 3,
+    "cpu_efficiency": 3.2988414264169843,
+    "min_ms": 54.569039,
+    "ordinal": 110,
+    "peak_rss_bytes": 516087808,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "33a": {
+    "column_count": 6,
+    "cpu_efficiency": 2.3557438669391857,
+    "min_ms": 125.418983,
+    "ordinal": 111,
+    "peak_rss_bytes": 564576256,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "33b": {
+    "column_count": 6,
+    "cpu_efficiency": 2.1440592192572994,
+    "min_ms": 114.129891,
+    "ordinal": 112,
+    "peak_rss_bytes": 676810752,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "33c": {
+    "column_count": 6,
+    "cpu_efficiency": 2.6314920628359815,
+    "min_ms": 126.968272,
+    "ordinal": 113,
+    "peak_rss_bytes": 522715136,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "3a": {
+    "column_count": 1,
+    "cpu_efficiency": 6.263813308210146,
+    "min_ms": 124.88862,
+    "ordinal": 9,
+    "peak_rss_bytes": 1676701696,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "3b": {
+    "column_count": 1,
+    "cpu_efficiency": 4.965181632001963,
+    "min_ms": 121.380855,
+    "ordinal": 10,
+    "peak_rss_bytes": 1590841344,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "3c": {
+    "column_count": 1,
+    "cpu_efficiency": 6.286651013734303,
+    "min_ms": 191.500206,
+    "ordinal": 11,
+    "peak_rss_bytes": 1734754304,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "4a": {
+    "column_count": 2,
+    "cpu_efficiency": 5.4037843734174595,
+    "min_ms": 74.810535,
+    "ordinal": 12,
+    "peak_rss_bytes": 875991040,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "4b": {
+    "column_count": 2,
+    "cpu_efficiency": 4.690513383874537,
+    "min_ms": 50.010664,
+    "ordinal": 13,
+    "peak_rss_bytes": 653328384,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "4c": {
+    "column_count": 2,
+    "cpu_efficiency": 5.645748221241015,
+    "min_ms": 113.43864,
+    "ordinal": 14,
+    "peak_rss_bytes": 882532352,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "5a": {
+    "column_count": 1,
+    "cpu_efficiency": 6.056582937736924,
+    "min_ms": 122.197542,
+    "ordinal": 15,
+    "peak_rss_bytes": 1551515648,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "5b": {
+    "column_count": 1,
+    "cpu_efficiency": 5.479663050131102,
+    "min_ms": 127.315675,
+    "ordinal": 16,
+    "peak_rss_bytes": 1539567616,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "5c": {
+    "column_count": 1,
+    "cpu_efficiency": 5.896350228613599,
+    "min_ms": 156.285323,
+    "ordinal": 17,
+    "peak_rss_bytes": 1630007296,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "6a": {
+    "column_count": 3,
+    "cpu_efficiency": 9.236373451722589,
+    "min_ms": 110.891142,
+    "ordinal": 18,
+    "peak_rss_bytes": 669454336,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "6b": {
+    "column_count": 3,
+    "cpu_efficiency": 8.444179067932591,
+    "min_ms": 110.264801,
+    "ordinal": 19,
+    "peak_rss_bytes": 647876608,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "6c": {
+    "column_count": 3,
+    "cpu_efficiency": 8.3760314667446,
+    "min_ms": 91.625974,
+    "ordinal": 20,
+    "peak_rss_bytes": 555098112,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "6d": {
+    "column_count": 3,
+    "cpu_efficiency": 9.264691065838484,
+    "min_ms": 135.647746,
+    "ordinal": 21,
+    "peak_rss_bytes": 1094631424,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "6e": {
+    "column_count": 3,
+    "cpu_efficiency": 8.90799729784224,
+    "min_ms": 120.969186,
+    "ordinal": 22,
+    "peak_rss_bytes": 583331840,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "6f": {
+    "column_count": 3,
+    "cpu_efficiency": 9.138163266662318,
+    "min_ms": 150.968608,
+    "ordinal": 23,
+    "peak_rss_bytes": 1134477312,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "7a": {
+    "column_count": 2,
+    "cpu_efficiency": 6.1536273350388,
+    "min_ms": 146.38033,
+    "ordinal": 24,
+    "peak_rss_bytes": 632246272,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "7b": {
+    "column_count": 2,
+    "cpu_efficiency": 3.805251511456851,
+    "min_ms": 95.774484,
+    "ordinal": 25,
+    "peak_rss_bytes": 464994304,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "7c": {
+    "column_count": 2,
+    "cpu_efficiency": 5.332165962785996,
+    "min_ms": 410.273614,
+    "ordinal": 26,
+    "peak_rss_bytes": 6450135040,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "8a": {
+    "column_count": 2,
+    "cpu_efficiency": 4.812570661522369,
+    "min_ms": 87.154045,
+    "ordinal": 27,
+    "peak_rss_bytes": 659107840,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "8b": {
+    "column_count": 2,
+    "cpu_efficiency": 4.552336149260031,
+    "min_ms": 98.781809,
+    "ordinal": 28,
+    "peak_rss_bytes": 606945280,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "8c": {
+    "column_count": 2,
+    "cpu_efficiency": 5.365575821824329,
+    "min_ms": 348.98547,
+    "ordinal": 29,
+    "peak_rss_bytes": 1275928576,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "8d": {
+    "column_count": 2,
+    "cpu_efficiency": 3.580960123582074,
+    "min_ms": 162.584446,
+    "ordinal": 30,
+    "peak_rss_bytes": 878772224,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "9a": {
+    "column_count": 3,
+    "cpu_efficiency": 6.732002664089191,
+    "min_ms": 158.359563,
+    "ordinal": 31,
+    "peak_rss_bytes": 851443712,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "9b": {
+    "column_count": 4,
+    "cpu_efficiency": 6.179984688431844,
+    "min_ms": 148.001823,
+    "ordinal": 32,
+    "peak_rss_bytes": 864071680,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "9c": {
+    "column_count": 4,
+    "cpu_efficiency": 6.724462971022245,
+    "min_ms": 150.006477,
+    "ordinal": 33,
+    "peak_rss_bytes": 919175168,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "9d": {
+    "column_count": 4,
+    "cpu_efficiency": 3.5594342449803746,
+    "min_ms": 254.43875,
+    "ordinal": 34,
+    "peak_rss_bytes": 1110204416,
+    "row_count": 1,
+    "status": "ok"
+   }
+  },
+  "tpch_sf100_skene": {
+   "q01": {
+    "column_count": 10,
+    "cpu_efficiency": 13.585483201467452,
+    "min_ms": 3398.035117,
+    "ordinal": 1,
+    "peak_rss_bytes": 6239031296,
+    "row_count": 4,
+    "status": "ok"
+   },
+   "q02": {
+    "column_count": 8,
+    "cpu_efficiency": 10.791345857410947,
+    "min_ms": 1054.06352,
+    "ordinal": 2,
+    "peak_rss_bytes": 3008659456,
+    "row_count": 100,
+    "status": "ok"
+   },
+   "q03": {
+    "column_count": 4,
+    "cpu_efficiency": 12.693038340952798,
+    "min_ms": 2206.349605,
+    "ordinal": 3,
+    "peak_rss_bytes": 7189385216,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q04": {
+    "column_count": 2,
+    "cpu_efficiency": 12.750911188676968,
+    "min_ms": 1924.667098,
+    "ordinal": 4,
+    "peak_rss_bytes": 4327325696,
+    "row_count": 5,
+    "status": "ok"
+   },
+   "q05": {
+    "column_count": 2,
+    "cpu_efficiency": 12.606039993804613,
+    "min_ms": 3463.388087,
+    "ordinal": 5,
+    "peak_rss_bytes": 9252233216,
+    "row_count": 5,
+    "status": "ok"
+   },
+   "q06": {
+    "column_count": 1,
+    "cpu_efficiency": 12.009278595005291,
+    "min_ms": 577.404187,
+    "ordinal": 6,
+    "peak_rss_bytes": 5463195648,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "q07": {
+    "column_count": 4,
+    "cpu_efficiency": 12.091530407884841,
+    "min_ms": 1949.652625,
+    "ordinal": 7,
+    "peak_rss_bytes": 10533195776,
+    "row_count": 4,
+    "status": "ok"
+   },
+   "q08": {
+    "column_count": 2,
+    "cpu_efficiency": 11.887860532518193,
+    "min_ms": 1920.834724,
+    "ordinal": 8,
+    "peak_rss_bytes": 11584110592,
+    "row_count": 2,
+    "status": "ok"
+   },
+   "q09": {
+    "column_count": 3,
+    "cpu_efficiency": 11.95269021978512,
+    "min_ms": 6851.154635,
+    "ordinal": 9,
+    "peak_rss_bytes": 19939213312,
+    "row_count": 175,
+    "status": "ok"
+   },
+   "q10": {
+    "column_count": 8,
+    "cpu_efficiency": 10.69308488202265,
+    "min_ms": 3159.500123,
+    "ordinal": 10,
+    "peak_rss_bytes": 12642652160,
+    "row_count": 20,
+    "status": "ok"
+   },
+   "q11": {
+    "column_count": 2,
+    "cpu_efficiency": 11.649459830316212,
+    "min_ms": 233.252446,
+    "ordinal": 11,
+    "peak_rss_bytes": 2073948160,
+    "row_count": 0,
+    "status": "ok"
+   },
+   "q12": {
+    "column_count": 3,
+    "cpu_efficiency": 12.904581598928846,
+    "min_ms": 1474.152715,
+    "ordinal": 12,
+    "peak_rss_bytes": 4911656960,
+    "row_count": 2,
+    "status": "ok"
+   },
+   "q13": {
+    "column_count": 2,
+    "cpu_efficiency": 11.173003025826608,
+    "min_ms": 5474.571252,
+    "ordinal": 13,
+    "peak_rss_bytes": 14090211328,
+    "row_count": 45,
+    "status": "ok"
+   },
+   "q14": {
+    "column_count": 1,
+    "cpu_efficiency": 11.191091443863584,
+    "min_ms": 1151.088262,
+    "ordinal": 14,
+    "peak_rss_bytes": 8960569344,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "q15": {
+    "column_count": 5,
+    "cpu_efficiency": 10.73181576109626,
+    "min_ms": 1076.101862,
+    "ordinal": 15,
+    "peak_rss_bytes": 10476847104,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "q16": {
+    "column_count": 4,
+    "cpu_efficiency": 11.474889070821147,
+    "min_ms": 504.52235,
+    "ordinal": 16,
+    "peak_rss_bytes": 2203361280,
+    "row_count": 27840,
+    "status": "ok"
+   },
+   "q17": {
+    "column_count": 1,
+    "cpu_efficiency": 12.308454125172247,
+    "min_ms": 1755.379279,
+    "ordinal": 17,
+    "peak_rss_bytes": 7446863872,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "q18": {
+    "column_count": 6,
+    "cpu_efficiency": 11.56497666235955,
+    "min_ms": 5267.095886,
+    "ordinal": 18,
+    "peak_rss_bytes": 18505973760,
+    "row_count": 100,
+    "status": "ok"
+   },
+   "q19": {
+    "column_count": 1,
+    "cpu_efficiency": 11.84004708394568,
+    "min_ms": 1380.988765,
+    "ordinal": 19,
+    "peak_rss_bytes": 8121098240,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "q20": {
+    "column_count": 2,
+    "cpu_efficiency": 10.96128798318594,
+    "min_ms": 2790.026679,
+    "ordinal": 20,
+    "peak_rss_bytes": 14602428416,
+    "row_count": 17971,
+    "status": "ok"
+   },
+   "q21": {
+    "column_count": 2,
+    "cpu_efficiency": 9.070945398700516,
+    "min_ms": 11858.870743,
+    "ordinal": 21,
+    "peak_rss_bytes": 29442015232,
+    "row_count": 100,
+    "status": "ok"
+   },
+   "q22": {
+    "column_count": 3,
+    "cpu_efficiency": 11.416460406307,
+    "min_ms": 1198.059898,
+    "ordinal": 22,
+    "peak_rss_bytes": 5832765440,
+    "row_count": 7,
+    "status": "ok"
+   }
+  },
+  "tpch_sf10_skene": {
+   "q01": {
+    "column_count": 10,
+    "cpu_efficiency": 12.921388657355818,
+    "min_ms": 356.35659,
+    "ordinal": 1,
+    "peak_rss_bytes": 1253470208,
+    "row_count": 4,
+    "status": "ok"
+   },
+   "q02": {
+    "column_count": 8,
+    "cpu_efficiency": 6.264069064622949,
+    "min_ms": 155.495412,
+    "ordinal": 2,
+    "peak_rss_bytes": 946954240,
+    "row_count": 100,
+    "status": "ok"
+   },
+   "q03": {
+    "column_count": 4,
+    "cpu_efficiency": 10.966644452601928,
+    "min_ms": 212.363956,
+    "ordinal": 3,
+    "peak_rss_bytes": 1208729600,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q04": {
+    "column_count": 2,
+    "cpu_efficiency": 11.386991614738953,
+    "min_ms": 175.893868,
+    "ordinal": 4,
+    "peak_rss_bytes": 848953344,
+    "row_count": 5,
+    "status": "ok"
+   },
+   "q05": {
+    "column_count": 2,
+    "cpu_efficiency": 10.03482292343532,
+    "min_ms": 321.724472,
+    "ordinal": 5,
+    "peak_rss_bytes": 1374494720,
+    "row_count": 5,
+    "status": "ok"
+   },
+   "q06": {
+    "column_count": 1,
+    "cpu_efficiency": 10.683430379935267,
+    "min_ms": 66.561676,
+    "ordinal": 6,
+    "peak_rss_bytes": 819621888,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "q07": {
+    "column_count": 4,
+    "cpu_efficiency": 9.77563526501295,
+    "min_ms": 225.113452,
+    "ordinal": 7,
+    "peak_rss_bytes": 1600356352,
+    "row_count": 4,
+    "status": "ok"
+   },
+   "q08": {
+    "column_count": 2,
+    "cpu_efficiency": 9.672249918394167,
+    "min_ms": 235.068988,
+    "ordinal": 8,
+    "peak_rss_bytes": 1680015360,
+    "row_count": 2,
+    "status": "ok"
+   },
+   "q09": {
+    "column_count": 3,
+    "cpu_efficiency": 10.346247368645798,
+    "min_ms": 579.066379,
+    "ordinal": 9,
+    "peak_rss_bytes": 1882517504,
+    "row_count": 175,
+    "status": "ok"
+   },
+   "q10": {
+    "column_count": 8,
+    "cpu_efficiency": 8.036551351060309,
+    "min_ms": 391.657424,
+    "ordinal": 10,
+    "peak_rss_bytes": 1858387968,
+    "row_count": 20,
+    "status": "ok"
+   },
+   "q11": {
+    "column_count": 2,
+    "cpu_efficiency": 6.811796553030011,
+    "min_ms": 43.220026,
+    "ordinal": 11,
+    "peak_rss_bytes": 650973184,
+    "row_count": 0,
+    "status": "ok"
+   },
+   "q12": {
+    "column_count": 3,
+    "cpu_efficiency": 11.204089234574337,
+    "min_ms": 157.968536,
+    "ordinal": 12,
+    "peak_rss_bytes": 863592448,
+    "row_count": 2,
+    "status": "ok"
+   },
+   "q13": {
+    "column_count": 2,
+    "cpu_efficiency": 8.688720766009434,
+    "min_ms": 604.60143,
+    "ordinal": 13,
+    "peak_rss_bytes": 1864245248,
+    "row_count": 46,
+    "status": "ok"
+   },
+   "q14": {
+    "column_count": 1,
+    "cpu_efficiency": 9.223979924525931,
+    "min_ms": 121.488339,
+    "ordinal": 14,
+    "peak_rss_bytes": 1239523328,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "q15": {
+    "column_count": 5,
+    "cpu_efficiency": 9.323138843486591,
+    "min_ms": 119.704535,
+    "ordinal": 15,
+    "peak_rss_bytes": 1289691136,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "q16": {
+    "column_count": 4,
+    "cpu_efficiency": 6.1028874732252625,
+    "min_ms": 80.792576,
+    "ordinal": 16,
+    "peak_rss_bytes": 741203968,
+    "row_count": 27840,
+    "status": "ok"
+   },
+   "q17": {
+    "column_count": 1,
+    "cpu_efficiency": 10.71144401586541,
+    "min_ms": 211.906723,
+    "ordinal": 17,
+    "peak_rss_bytes": 1129529344,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "q18": {
+    "column_count": 6,
+    "cpu_efficiency": 10.150170025439412,
+    "min_ms": 427.464268,
+    "ordinal": 18,
+    "peak_rss_bytes": 2469650432,
+    "row_count": 100,
+    "status": "ok"
+   },
+   "q19": {
+    "column_count": 1,
+    "cpu_efficiency": 9.865752777993194,
+    "min_ms": 165.823119,
+    "ordinal": 19,
+    "peak_rss_bytes": 1195110400,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "q20": {
+    "column_count": 2,
+    "cpu_efficiency": 8.797103809190531,
+    "min_ms": 326.362751,
+    "ordinal": 20,
+    "peak_rss_bytes": 1982697472,
+    "row_count": 1804,
+    "status": "ok"
+   },
+   "q21": {
+    "column_count": 2,
+    "cpu_efficiency": 11.600297953975016,
+    "min_ms": 493.482928,
+    "ordinal": 21,
+    "peak_rss_bytes": 1477910528,
+    "row_count": 100,
+    "status": "ok"
+   },
+   "q22": {
+    "column_count": 3,
+    "cpu_efficiency": 7.234140403381814,
+    "min_ms": 116.269792,
+    "ordinal": 22,
+    "peak_rss_bytes": 1033404416,
+    "row_count": 7,
+    "status": "ok"
+   }
+  },
+  "tpch_sf1_skene": {
+   "q01": {
+    "column_count": 10,
+    "cpu_efficiency": 9.414928676546044,
+    "min_ms": 50.776729,
+    "ordinal": 1,
+    "peak_rss_bytes": 665870336,
+    "row_count": 4,
+    "status": "ok"
+   },
+   "q02": {
+    "column_count": 8,
+    "cpu_efficiency": 1.5657775633514828,
+    "min_ms": 73.547265,
+    "ordinal": 2,
+    "peak_rss_bytes": 366403584,
+    "row_count": 100,
+    "status": "ok"
+   },
+   "q03": {
+    "column_count": 4,
+    "cpu_efficiency": 5.0501662028887,
+    "min_ms": 43.820538,
+    "ordinal": 3,
+    "peak_rss_bytes": 530792448,
+    "row_count": 10,
+    "status": "ok"
+   },
+   "q04": {
+    "column_count": 2,
+    "cpu_efficiency": 5.912491372880763,
+    "min_ms": 32.792635,
+    "ordinal": 4,
+    "peak_rss_bytes": 439205888,
+    "row_count": 5,
+    "status": "ok"
+   },
+   "q05": {
+    "column_count": 2,
+    "cpu_efficiency": 4.77892895535018,
+    "min_ms": 57.034958,
+    "ordinal": 5,
+    "peak_rss_bytes": 675684352,
+    "row_count": 5,
+    "status": "ok"
+   },
+   "q06": {
+    "column_count": 1,
+    "cpu_efficiency": 5.665812170946435,
+    "min_ms": 13.767115,
+    "ordinal": 6,
+    "peak_rss_bytes": 290824192,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "q07": {
+    "column_count": 4,
+    "cpu_efficiency": 4.205084838427181,
+    "min_ms": 56.628584,
+    "ordinal": 7,
+    "peak_rss_bytes": 695668736,
+    "row_count": 4,
+    "status": "ok"
+   },
+   "q08": {
+    "column_count": 2,
+    "cpu_efficiency": 3.9868652546430217,
+    "min_ms": 64.386174,
+    "ordinal": 8,
+    "peak_rss_bytes": 560885760,
+    "row_count": 2,
+    "status": "ok"
+   },
+   "q09": {
+    "column_count": 3,
+    "cpu_efficiency": 4.108948386924198,
+    "min_ms": 113.909681,
+    "ordinal": 9,
+    "peak_rss_bytes": 660807680,
+    "row_count": 175,
+    "status": "ok"
+   },
+   "q10": {
+    "column_count": 8,
+    "cpu_efficiency": 2.1641508743291733,
+    "min_ms": 124.543997,
+    "ordinal": 10,
+    "peak_rss_bytes": 555847680,
+    "row_count": 20,
+    "status": "ok"
+   },
+   "q11": {
+    "column_count": 2,
+    "cpu_efficiency": 1.872385248807178,
+    "min_ms": 23.282295,
+    "ordinal": 11,
+    "peak_rss_bytes": 245776384,
+    "row_count": 1048,
+    "status": "ok"
+   },
+   "q12": {
+    "column_count": 3,
+    "cpu_efficiency": 5.581225324283612,
+    "min_ms": 33.847462,
+    "ordinal": 12,
+    "peak_rss_bytes": 442761216,
+    "row_count": 2,
+    "status": "ok"
+   },
+   "q13": {
+    "column_count": 2,
+    "cpu_efficiency": 2.4362382722749403,
+    "min_ms": 190.408305,
+    "ordinal": 13,
+    "peak_rss_bytes": 582062080,
+    "row_count": 42,
+    "status": "ok"
+   },
+   "q14": {
+    "column_count": 1,
+    "cpu_efficiency": 3.59169469874625,
+    "min_ms": 32.777358,
+    "ordinal": 14,
+    "peak_rss_bytes": 404877312,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "q15": {
+    "column_count": 5,
+    "cpu_efficiency": 4.831909365623916,
+    "min_ms": 25.3854,
+    "ordinal": 15,
+    "peak_rss_bytes": 425308160,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "q16": {
+    "column_count": 4,
+    "cpu_efficiency": 1.5378032137219981,
+    "min_ms": 39.843141,
+    "ordinal": 16,
+    "peak_rss_bytes": 281882624,
+    "row_count": 18303,
+    "status": "ok"
+   },
+   "q17": {
+    "column_count": 1,
+    "cpu_efficiency": 5.633252521560461,
+    "min_ms": 43.958041,
+    "ordinal": 17,
+    "peak_rss_bytes": 434057216,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "q18": {
+    "column_count": 6,
+    "cpu_efficiency": 5.795554585928426,
+    "min_ms": 71.50515,
+    "ordinal": 18,
+    "peak_rss_bytes": 619409408,
+    "row_count": 57,
+    "status": "ok"
+   },
+   "q19": {
+    "column_count": 1,
+    "cpu_efficiency": 3.6554516356797384,
+    "min_ms": 52.621413,
+    "ordinal": 19,
+    "peak_rss_bytes": 394772480,
+    "row_count": 1,
+    "status": "ok"
+   },
+   "q20": {
+    "column_count": 2,
+    "cpu_efficiency": 3.410166336590562,
+    "min_ms": 68.170867,
+    "ordinal": 20,
+    "peak_rss_bytes": 529707008,
+    "row_count": 186,
+    "status": "ok"
+   },
+   "q21": {
+    "column_count": 2,
+    "cpu_efficiency": 6.813501907488426,
+    "min_ms": 91.871752,
+    "ordinal": 21,
+    "peak_rss_bytes": 633155584,
+    "row_count": 100,
+    "status": "ok"
+   },
+   "q22": {
+    "column_count": 3,
+    "cpu_efficiency": 1.94939444215548,
+    "min_ms": 41.780154,
+    "ordinal": 22,
+    "peak_rss_bytes": 372174848,
+    "row_count": 7,
+    "status": "ok"
+   }
+  }
+ },
+ "run_date": "2026-09-19T11:02:56.206067+00:00",
+ "run_id": "2026-09-19T10:59Z",
+ "status": "ok",
+ "totals": {
+  "clickbench_parquet": {
+   "crashed": 0,
+   "error": 0,
+   "ok": 43,
+   "peak_rss_bytes": 15181467648,
+   "queries": 43,
+   "sum_min_ms": 23637.826587,
+   "timeout": 0,
+   "unstable": 0
+  },
+  "clickbench_skene": {
+   "crashed": 0,
+   "error": 0,
+   "ok": 43,
+   "peak_rss_bytes": 16205778944,
+   "queries": 43,
+   "sum_min_ms": 17231.485077,
+   "timeout": 0,
+   "unstable": 0
+  },
+  "h2o_skene": {
+   "crashed": 0,
+   "error": 0,
+   "ok": 15,
+   "peak_rss_bytes": 25049833472,
+   "queries": 15,
+   "sum_min_ms": 27459.418041,
+   "timeout": 0,
+   "unstable": 0
+  },
+  "job_skene": {
+   "crashed": 0,
+   "error": 0,
+   "ok": 113,
+   "peak_rss_bytes": 6450135040,
+   "queries": 113,
+   "sum_min_ms": 21486.574445,
+   "timeout": 0,
+   "unstable": 0
+  },
+  "tpch_sf100_skene": {
+   "crashed": 0,
+   "error": 0,
+   "ok": 22,
+   "peak_rss_bytes": 29442015232,
+   "queries": 22,
+   "sum_min_ms": 60669.159858,
+   "timeout": 0,
+   "unstable": 0
+  },
+  "tpch_sf10_skene": {
+   "crashed": 0,
+   "error": 0,
+   "ok": 22,
+   "peak_rss_bytes": 2469650432,
+   "queries": 22,
+   "sum_min_ms": 5588.38724,
+   "timeout": 0,
+   "unstable": 0
+  },
+  "tpch_sf1_skene": {
+   "crashed": 0,
+   "error": 0,
+   "ok": 22,
+   "peak_rss_bytes": 695668736,
+   "queries": 22,
+   "sum_min_ms": 1346.659014,
+   "timeout": 0,
+   "unstable": 0
+  }
+ }
+}
