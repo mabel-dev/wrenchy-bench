@@ -5,74 +5,90 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Wrenchy Bench - Opteryx Benchmarking</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --ground:#F4F6F4; --surface:#FFF; --sunken:#EAEEEB;
-    --ink:#111715; --ink-soft:#4B5551; --muted:#6E7873;
-    --rule:#D6DDD8; --rule-firm:#B9C4BE;
-    --accent:#14655A; --signal:#9B6410; --alarm:#9E352C; --ok:#3D6B2E; --flat:#3061A6; --record:#7A5AA6;
-    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
-    --serif: ui-serif, "Iowan Old Style", Charter, Georgia, serif;
+    --ground:#F8FAFC; --surface:#FFF; --tint:#F1F7F6;
+    --ink:#1C2656; --ink-soft:#475467; --muted:#667085;
+    --rule:#E4E8EE; --rule-firm:#CDD4DE; --frame:#4A5590;
+    --accent:#177E78; --signal:#B7791F; --alarm:#B42318; --ok:#177E78; --record:#C85412;
+    --link:#D2601A;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --display: "Space Grotesk", var(--sans);
+    --shadow: 0 1px 2px rgb(16 24 40 / 0.04), 0 1px 3px rgb(16 24 40 / 0.05);
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --ground:#0D110F; --surface:#151B18; --sunken:#1B221F;
-      --ink:#E4EAE6; --ink-soft:#B3BDB8; --muted:#8B9791;
-      --rule:#26302C; --rule-firm:#3A4741;
-      --accent:#57B5A2; --signal:#D3A055; --alarm:#DC8177; --ok:#86BC6E; --flat:#6FA3E0; --record:#B39DDB;
+      --ground:#0E1320; --surface:#151B2B; --tint:#17252A;
+      --ink:#E3E8F5; --ink-soft:#B4BDCF; --muted:#8B95AA;
+      --rule:#252E42; --rule-firm:#34405A; --frame:#7D88C4;
+      --accent:#4CC2B8; --signal:#E0A94F; --alarm:#F07A6E; --ok:#4CC2B8; --record:#F08A4B;
+      --link:#F08A4B;
+      --shadow: none;
     }
   }
   * { box-sizing:border-box; }
   body {
-    background:var(--ground); color:var(--ink); font-family:var(--serif);
-    margin:0; padding:0 24px 80px; line-height:1.6; -webkit-font-smoothing:antialiased;
+    background:var(--ground); color:var(--ink); font-family:var(--sans);
+    margin:0; padding:0 24px 80px; line-height:1.55; -webkit-font-smoothing:antialiased;
   }
-  .wrap { max-width:1000px; margin:0 auto; }
-  header { padding:56px 0 22px; border-bottom:2px solid var(--ink); }
-  h1 { font-family:var(--mono); font-size:clamp(26px,4vw,38px); font-weight:600;
-       letter-spacing:-0.025em; margin:0 0 10px; }
+  .wrap { max-width:1160px; margin:0 auto; }
+  header { padding:56px 0 30px; }
+  .brand { display:flex; align-items:center; gap:14px; margin:0 0 10px; }
+  .brand img { width:40px; height:40px; border-radius:8px; flex:none; }
+  h1 { font-family:var(--display); font-size:clamp(26px,4vw,34px); font-weight:500;
+       letter-spacing:-0.01em; margin:0; color:var(--ink); }
   .sub { color:var(--ink-soft); margin:0; max-width:62ch; }
-  h2 { font-family:var(--mono); font-size:12px; letter-spacing:0.15em; text-transform:uppercase;
-       margin:52px 0 0; padding-bottom:9px; border-bottom:1px solid var(--rule-firm); }
+  .sub a { color:var(--link); }
+  h2 { font-family:var(--sans); font-size:12px; font-weight:500; letter-spacing:0.06em;
+       text-transform:uppercase; color:var(--ink-soft); margin:52px 0 12px; }
 
-  .headline { display:flex; flex-wrap:wrap; gap:0; border-bottom:1px solid var(--rule);
-              padding-bottom:20px; margin-bottom:8px; }
-  .headline div { padding:18px 24px 0 0; margin-right:24px; border-right:1px solid var(--rule); min-width:130px; }
-  .headline div:last-child { border-right:0; }
-  .headline dt { font-family:var(--mono); font-size:10px; letter-spacing:0.13em;
-                 text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
-  .headline dd { font-family:var(--mono); font-size:15px; margin:0; font-variant-numeric:tabular-nums; }
+  .headline { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));
+              border-top:1px solid var(--frame); border-bottom:1px solid var(--rule); margin:0; }
+  .headline div { padding:22px 20px 24px; border-left:1px solid var(--rule); }
+  .headline div:first-child { border-left:0; padding-left:0; }
+  .headline dt { font-family:var(--sans); font-size:11px; font-weight:500; letter-spacing:0.06em;
+                 text-transform:uppercase; color:var(--ink-soft); margin-bottom:10px; }
+  .headline dd { font-family:var(--mono); font-size:15px; margin:0; color:var(--ink);
+                 font-variant-numeric:tabular-nums; }
 
-  .scroller { overflow-x:auto; border:1px solid var(--rule); background:var(--surface); margin:22px 0; }
-  table { border-collapse:collapse; width:100%; font-family:var(--mono); font-size:13px; }
-  th { text-align:left; font-size:12px; letter-spacing:0.1em; text-transform:uppercase;
-       color:var(--muted); padding:11px 13px; border-bottom:1px solid var(--rule-firm); white-space:nowrap; }
+  .scroller { overflow-x:auto; border:1px solid var(--rule); border-radius:12px;
+              background:var(--surface); box-shadow:var(--shadow); margin:0; }
+  table { border-collapse:collapse; width:100%; font-family:var(--mono); font-size:14px; }
+  th { text-align:left; font-family:var(--sans); font-size:11px; font-weight:500; letter-spacing:0.06em;
+       text-transform:uppercase; color:var(--ink-soft); background:var(--tint);
+       padding:14px 18px; border-bottom:1px solid var(--rule); white-space:nowrap; }
   th:not(:first-child) { text-align:right; }
-  td { padding:10px 13px; border-bottom:1px solid var(--rule); color:var(--ink-soft); white-space:nowrap; }
+  td { padding:12px 18px; border-bottom:1px solid var(--rule); color:var(--ink-soft); white-space:nowrap; }
   tbody tr:last-child td { border-bottom:0; }
-  td.k { color:var(--ink); font-weight:600; }
+  td.k { color:var(--ink); font-weight:500; }
   td.n { text-align:right; font-variant-numeric:tabular-nums; }
 
-  .chip { display:inline-block; font-family:var(--mono); font-size:10px; letter-spacing:0.06em;
-          text-transform:uppercase; padding:2px 7px; border-radius:2px; }
-  .ok      { background:color-mix(in srgb, var(--ok) 15%, transparent);      color:var(--ok); }
-  .suspect { background:color-mix(in srgb, var(--signal) 18%, transparent);  color:var(--signal); }
-  .failed  { background:color-mix(in srgb, var(--alarm) 15%, transparent);   color:var(--alarm); }
+  .chip { display:inline-block; font-family:var(--sans); font-size:10.5px; font-weight:500;
+          letter-spacing:0.06em; text-transform:uppercase; padding:2px 8px; border-radius:999px; }
+  .ok      { background:color-mix(in srgb, var(--ok) 12%, transparent);      color:var(--ok); }
+  .suspect { background:color-mix(in srgb, var(--signal) 16%, transparent);  color:var(--signal); }
+  .failed  { background:color-mix(in srgb, var(--alarm) 12%, transparent);   color:var(--alarm); }
 
   /* A run that set a new all-time best or worst. Colour alone is not a channel
      everyone can read, so the cell also carries a tooltip naming the record it
      broke and the mark it beat. */
   .muted { color:var(--muted); }
-  .best  { color:var(--ok);    font-weight:600; }
-  .worst { color:var(--alarm); font-weight:600; }
+  .this  { color:var(--accent); }
+  .best  { color:var(--accent); font-weight:600; }
+  .worst { color:var(--alarm);  font-weight:600; }
   .spark { display:inline-block; vertical-align:middle; }
-  .chart { display:block; width:100%; height:auto; }
+  .chart { display:block; width:100%; height:auto; padding:18px 18px 0; }
   .axis-label { font-family:var(--mono); font-size:11px; fill:var(--muted); }
+  .grid { stroke:var(--rule); stroke-width:1; }
   .hit { fill:transparent; }
   [data-tip] { cursor:crosshair; }
-  .avg { stroke:var(--muted); stroke-width:1.25; stroke-dasharray:4 3; fill:none; opacity:0.85; }
-  .legend { font-family:var(--mono); font-size:11px; color:var(--muted);
-            display:flex; gap:20px; padding:0 14px 12px; flex-wrap:wrap; justify-content:center; }
+  .avg { stroke:var(--muted); stroke-width:1.25; stroke-dasharray:4 3; fill:none; opacity:0.7; }
+  .legend { font-family:var(--sans); font-size:12px; color:var(--ink-soft);
+            display:flex; gap:22px; padding:6px 18px 16px; flex-wrap:wrap; justify-content:center; }
   .legend span { display:inline-flex; align-items:center; gap:7px; }
   .legend i { display:inline-block; width:18px; height:0; border-top:2px solid var(--accent); }
   .legend i.dash { border-top:2px dashed var(--muted); }
@@ -80,24 +96,29 @@
   /* The tooltip is fixed-positioned and pointer-events:none so it can never sit
      between the cursor and the next hit target it is describing. */
   #tip { position:fixed; z-index:10; pointer-events:none; opacity:0; transition:opacity .08s;
-         background:var(--surface); color:var(--ink); border:1px solid var(--rule-firm);
+         background:var(--surface); color:var(--ink); border:1px solid var(--rule-firm); border-radius:8px;
          font-family:var(--mono); font-size:11.5px; line-height:1.5; padding:7px 10px;
-         box-shadow:0 2px 10px rgb(0 0 0 / 0.12); white-space:nowrap;
+         box-shadow:0 4px 14px rgb(16 24 40 / 0.12); white-space:nowrap;
          font-variant-numeric:tabular-nums; }
   #tip.on { opacity:1; }
   #tip b { font-weight:600; }
   #tip em { font-style:normal; color:var(--muted); }
   .empty { font-family:var(--mono); font-size:13px; color:var(--muted); padding:36px 0; }
-  footer { margin-top:56px; padding-top:18px; border-top:2px solid var(--ink);
-           font-family:var(--mono); font-size:11px; color:var(--muted); }
+  footer { margin-top:56px; padding-top:18px; border-top:1px solid var(--rule);
+           font-family:var(--sans); font-size:12px; color:var(--muted); }
   a { color:var(--accent); text-decoration:none; }
+  a:hover { text-decoration:underline; }
+  @media (max-width:600px) {
+    body { padding:0 16px 60px; }
+    .headline div, .headline div:first-child { border-left:0; padding-left:0; }
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
 
 <header>
-  <h1>Wrenchy Bench</h1>
+  <div class="brand"><img src="favicon.svg" alt=""><h1>Wrenchy Bench</h1></div>
   <p class="sub">Tracking the performance of <a href="https://opteryx.app">Opteryx</a> release-over-release.</p>
 </header>
 
@@ -121,6 +142,18 @@ const fmt = {
 // class stays keyed on the raw value; only the label shown to the reader
 // changes.
 const statusLabel = status => status === "ok" ? "okay" : status;
+
+// "tpch_sf100_skene" -> "TPC-H SF100 (skene)". The last segment is the
+// storage format; the rest names the benchmark. Suite names that are acronyms
+// get their proper casing, anything unknown is simply capitalised.
+const SUITE_NAMES = { clickbench: "Clickbench", h2o: "H2O", job: "JOB", tpch: "TPC-H" };
+const lineName = id => {
+  const parts = id.split("_");
+  const format = parts.length > 1 ? parts.pop() : null;
+  const name = parts.map(p => SUITE_NAMES[p] ?? (/^sf\d+$/.test(p) ? p.toUpperCase()
+    : p.charAt(0).toUpperCase() + p.slice(1))).join(" ");
+  return format ? `${name} (${format})` : name;
+};
 
 // Escaped so a run id or version string can never break out of the attribute
 // it is stored in.
@@ -167,7 +200,7 @@ function spark(values, meta, w = 108, h = 26) {
   const last = clean[clean.length - 1];
   const lastX = w, lastY = h - ((last - lo) / span) * (h - 4) - 2;
   return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true">
-    <polyline points="${points}" fill="none" stroke="var(--accent)" stroke-width="1.25"
+    <polyline points="${points}" fill="none" stroke="var(--accent)" stroke-width="1.4"
       stroke-linejoin="round" stroke-linecap="round"/>
     <circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="2" fill="var(--accent)"/>
     ${hits(values, meta, x, 0, w, h, fmt.secs)}
@@ -197,7 +230,7 @@ function rolling(values, window) {
 // line.
 const AVG_WINDOW = 5;
 
-function suiteChart(history, w = 900, h = 140) {
+function suiteChart(history, w = 1100, h = 300) {
   const values = history.map(run =>
     Object.values(run.totals).reduce((sum, t) => sum + (t.sum_min_ms || 0), 0));
   if (values.length < 2) return `<p class="empty">Not enough runs yet.</p>`;
@@ -210,7 +243,7 @@ function suiteChart(history, w = 900, h = 140) {
   // still fixes the scale.
   const lo = Math.min(...values), hi = Math.max(...values);
   const span = (hi - lo) || 1;
-  const padL = 58, padR = 14, padT = 16, padB = 16;
+  const padL = 64, padR = 14, padT = 10, padB = 12;
   const step = (w - padL - padR) / (values.length - 1);
   const x = i => padL + i * step;
   const y = v => h - padB - ((v - lo) / span) * (h - padT - padB);
@@ -227,12 +260,10 @@ function suiteChart(history, w = 900, h = 140) {
     if (v != null && (best == null || v < best)) { records.add(i); return v; }
     return best;
   }, null);
-  // The first run is a record only in the trivial sense that nothing precedes it.
-  records.delete(0);
 
   const dots = values.map((v, i) => records.has(i)
-    ? `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="4" fill="var(--record)"/>`
-    : `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="2.5" fill="var(--accent)"/>`
+    ? `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="4.5" fill="var(--record)"/>`
+    : `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="3" fill="var(--accent)"/>`
   ).join("");
   const targets = hits(values, meta, x, padL, w - padR, h, fmt.secs, (i, m) => {
     const parts = [m.engine];
@@ -245,12 +276,10 @@ function suiteChart(history, w = 900, h = 140) {
   return `
     <svg class="chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"
          role="img" aria-label="Fastest-run total, entire suite, across all recorded runs">
-      <line x1="${padL}" y1="${y(lo).toFixed(1)}" x2="${w - padR}" y2="${y(lo).toFixed(1)}"
-            stroke="var(--rule)" stroke-width="1"/>
-      ${axisLabel(lo, y(lo))}
-      ${axisLabel(hi, y(hi))}
+      ${[hi, (hi + lo) / 2, lo].map(v => `<line class="grid" x1="${padL}" y1="${y(v).toFixed(1)}"
+            x2="${w - padR}" y2="${y(v).toFixed(1)}"/>${axisLabel(v, y(v))}`).join("")}
       ${avgPoints ? `<polyline class="avg" points="${avgPoints}"/>` : ""}
-      <polyline points="${points}" fill="none" stroke="var(--accent)" stroke-width="1.5"
+      <polyline points="${points}" fill="none" stroke="var(--accent)" stroke-width="2"
                 stroke-linejoin="round" stroke-linecap="round"/>
       ${dots}
       ${targets}
@@ -323,7 +352,7 @@ function render(index) {
   const record = (series, i) => {
     if (i < 0) return `<td class="n">—</td>`;
     if (i === series.length - 1 && series.filter(v => v != null).length > 1) {
-      return `<td class="n"><span class="muted"
+      return `<td class="n"><span class="this"
         ${tip(runMeta[i].run_id, fmt.secs(series[i]), "Set by this run")}>= this run</span></td>`;
     }
     return `<td class="n"><span ${tip(runMeta[i].run_id, fmt.secs(series[i]), runMeta[i].engine)}>${
@@ -361,7 +390,7 @@ function render(index) {
     const bestAt = extreme(series, (v, b) => v < b);
     const worstAt = extreme(series, (v, b) => v > b);
     return `<tr>
-      <td class="k">${line}</td>
+      <td class="k" title="${esc(line)}">${esc(lineName(line))}</td>
       ${thisRun(series)}
       ${record(series, bestAt)}
       ${record(series, worstAt)}
