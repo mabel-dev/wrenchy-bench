@@ -1,10 +1,105 @@
 [
  {
+  "run_id": "2026-09-23T11:37Z",
+  "run_date": "2026-09-23T11:40:53.853635+00:00",
+  "status": "ok",
+  "engine_version": "0.9.133",
+  "engine_build": 3547,
+  "host": {
+   "availability_zone": "us-east-1a",
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4 (Neoverse-V2)",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": 33013035008,
+   "memory_gib": 32
+  },
+  "totals": {
+   "clickbench_parquet": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 43,
+    "peak_rss_bytes": 14977593344,
+    "queries": 43,
+    "sum_min_ms": 24093.240217,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "clickbench_skene": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 43,
+    "peak_rss_bytes": 16293679104,
+    "queries": 43,
+    "sum_min_ms": 17637.727951,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "h2o_skene": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 15,
+    "peak_rss_bytes": 25024708608,
+    "queries": 15,
+    "sum_min_ms": 28153.235957,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "job_skene": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 113,
+    "peak_rss_bytes": 6435045376,
+    "queries": 113,
+    "sum_min_ms": 21963.708043,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "tpch_sf100_skene": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 22,
+    "peak_rss_bytes": 29794832384,
+    "queries": 22,
+    "sum_min_ms": 59585.673009,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "tpch_sf10_skene": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 22,
+    "peak_rss_bytes": 2454933504,
+    "queries": 22,
+    "sum_min_ms": 5708.107771,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "tpch_sf1_skene": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 22,
+    "peak_rss_bytes": 677969920,
+    "queries": 22,
+    "sum_min_ms": 1392.184397,
+    "timeout": 0,
+    "unstable": 0
+   }
+  }
+ },
+ {
   "run_id": "2026-09-22T11:39Z",
   "run_date": "2026-09-22T11:43:12.883629+00:00",
   "status": "ok",
   "engine_version": "0.9.133",
   "engine_build": 3547,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -76,14 +171,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  },
  {
@@ -92,6 +179,14 @@
   "status": "ok",
   "engine_version": "0.9.132",
   "engine_build": 3546,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -163,14 +258,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  },
  {
@@ -179,6 +266,14 @@
   "status": "ok",
   "engine_version": "0.9.129",
   "engine_build": 3543,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -250,14 +345,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  },
  {
@@ -266,6 +353,14 @@
   "status": "ok",
   "engine_version": "0.9.128",
   "engine_build": 3540,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -337,14 +432,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  },
  {
@@ -353,6 +440,14 @@
   "status": "ok",
   "engine_version": "0.9.126",
   "engine_build": 3537,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -424,14 +519,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  },
  {
@@ -440,6 +527,14 @@
   "status": "ok",
   "engine_version": "0.9.123",
   "engine_build": 3527,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -511,14 +606,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  },
  {
@@ -527,6 +614,14 @@
   "status": "ok",
   "engine_version": "0.9.122",
   "engine_build": 3525,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -598,14 +693,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  },
  {
@@ -614,6 +701,14 @@
   "status": "ok",
   "engine_version": "0.9.120",
   "engine_build": 3522,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -685,14 +780,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  },
  {
@@ -701,6 +788,14 @@
   "status": "ok",
   "engine_version": "0.9.119",
   "engine_build": 3521,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -772,14 +867,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  },
  {
@@ -788,6 +875,14 @@
   "status": "ok",
   "engine_version": "0.9.116",
   "engine_build": 3517,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -859,14 +954,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  },
  {
@@ -875,6 +962,14 @@
   "status": "ok",
   "engine_version": "0.9.113",
   "engine_build": 3511,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -946,14 +1041,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  },
  {
@@ -962,6 +1049,14 @@
   "status": "ok",
   "engine_version": "0.9.111",
   "engine_build": 3508,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -1033,14 +1128,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  },
  {
@@ -1049,6 +1136,14 @@
   "status": "ok",
   "engine_version": "0.9.109",
   "engine_build": 3506,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -1120,14 +1215,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  },
  {
@@ -1136,6 +1223,14 @@
   "status": "ok",
   "engine_version": "0.9.106",
   "engine_build": 3503,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -1207,14 +1302,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  },
  {
@@ -1223,6 +1310,14 @@
   "status": "ok",
   "engine_version": "0.9.103",
   "engine_build": 3500,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -1294,14 +1389,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  },
  {
@@ -1310,6 +1397,14 @@
   "status": "ok",
   "engine_version": "0.9.101",
   "engine_build": 3497,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -1381,14 +1476,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  },
  {
@@ -1397,6 +1484,14 @@
   "status": "ok",
   "engine_version": "0.9.100",
   "engine_build": 3496,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -1468,14 +1563,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  },
  {
@@ -1484,6 +1571,14 @@
   "status": "ok",
   "engine_version": "0.9.99",
   "engine_build": 3494,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -1555,14 +1650,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  },
  {
@@ -1571,6 +1658,14 @@
   "status": "ok",
   "engine_version": "0.9.97",
   "engine_build": 3492,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -1642,14 +1737,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  },
  {
@@ -1658,6 +1745,14 @@
   "status": "ok",
   "engine_version": "0.9.96",
   "engine_build": 3491,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -1729,14 +1824,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  },
  {
@@ -1745,6 +1832,14 @@
   "status": "ok",
   "engine_version": "0.9.94",
   "engine_build": 3488,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -1816,14 +1911,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  },
  {
@@ -1832,6 +1919,14 @@
   "status": "ok",
   "engine_version": "0.9.93",
   "engine_build": 3487,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -1903,14 +1998,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  },
  {
@@ -1919,6 +2006,14 @@
   "status": "ok",
   "engine_version": "0.9.91",
   "engine_build": 3484,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -1990,14 +2085,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  },
  {
@@ -2006,6 +2093,14 @@
   "status": "ok",
   "engine_version": "0.9.88",
   "engine_build": 3479,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -2077,14 +2172,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  },
  {
@@ -2093,6 +2180,14 @@
   "status": "ok",
   "engine_version": "0.9.87",
   "engine_build": 3477,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -2164,14 +2259,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  },
  {
@@ -2180,6 +2267,14 @@
   "status": "ok",
   "engine_version": "0.9.84",
   "engine_build": 3467,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -2251,14 +2346,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  },
  {
@@ -2267,6 +2354,14 @@
   "status": "ok",
   "engine_version": "0.9.82",
   "engine_build": 3464,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -2338,14 +2433,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  },
  {
@@ -2354,6 +2441,14 @@
   "status": "ok",
   "engine_version": "0.9.79",
   "engine_build": 3455,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -2425,14 +2520,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  },
  {
@@ -2441,6 +2528,14 @@
   "status": "ok",
   "engine_version": "0.9.78",
   "engine_build": 3281,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -2512,14 +2607,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  },
  {
@@ -2528,6 +2615,14 @@
   "status": "ok",
   "engine_version": "0.9.77",
   "engine_build": 3247,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -2599,14 +2694,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  },
  {
@@ -2615,6 +2702,14 @@
   "status": "ok",
   "engine_version": "0.9.77",
   "engine_build": 3247,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -2686,14 +2781,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  },
  {
@@ -2702,6 +2789,14 @@
   "status": "ok",
   "engine_version": "0.9.76",
   "engine_build": 3231,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -2773,14 +2868,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  },
  {
@@ -2789,6 +2876,14 @@
   "status": "ok",
   "engine_version": "0.9.74",
   "engine_build": 3172,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -2860,14 +2955,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  },
  {
@@ -2876,6 +2963,14 @@
   "status": "ok",
   "engine_version": "0.9.73",
   "engine_build": 3167,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -2947,14 +3042,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  },
  {
@@ -2963,6 +3050,14 @@
   "status": "ok",
   "engine_version": "0.9.71",
   "engine_build": 3165,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -3034,14 +3129,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  },
  {
@@ -3050,6 +3137,14 @@
   "status": "ok",
   "engine_version": "0.9.70",
   "engine_build": 3141,
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
+  },
   "totals": {
    "clickbench_parquet": {
     "crashed": 0,
@@ -3121,14 +3216,6 @@
     "timeout": 0,
     "unstable": 0
    }
-  },
-  "host": {
-   "availability_zone": null,
-   "cpu_count": 16,
-   "cpu_model": "AWS Graviton4",
-   "instance_type": "c8g.4xlarge",
-   "mem_total_bytes": null,
-   "memory_gib": 32
   }
  }
 ]
