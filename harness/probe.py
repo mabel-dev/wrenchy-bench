@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import os
 import resource
+import subprocess
 import sys
 import time
 from dataclasses import asdict, dataclass
@@ -199,6 +200,27 @@ def probe_child(argv: list[str], **popen_kwargs) -> tuple[int, Reading, float]:
     )
 
 
+def _cpu_model() -> str | None:
+    """The CPU's name as lscpu reports it, e.g. ``Neoverse-V2``.
+
+    /proc/cpuinfo on arm64 has no "model name" line — the first match used to
+    be ``CPU implementer : 0x41``, which names the licensor, not the core.
+    lscpu decodes the part number; /proc/cpuinfo is the fallback for x86.
+    """
+    try:
+        out = subprocess.run(["lscpu"], capture_output=True, text=True, timeout=10).stdout
+        for line in out.splitlines():
+            if line.startswith("Model name:"):
+                return line.split(":", 1)[1].strip()
+    except (OSError, subprocess.SubprocessError):
+        pass
+    with open("/proc/cpuinfo", "r") as handle:
+        for line in handle:
+            if line.startswith("model name"):
+                return line.split(":", 1)[1].strip()
+    return None
+
+
 def host_facts() -> dict:
     """Environment facts recorded once per run, for benchmark_runs."""
     facts = {
@@ -212,11 +234,7 @@ def host_facts() -> dict:
         "peak_rss_reset_supported": verify_peak_rss_reset(),
     }
     if _LINUX:
-        with open("/proc/cpuinfo", "r") as handle:
-            for line in handle:
-                if line.startswith(("model name", "CPU implementer", "Model")):
-                    facts["cpu_model"] = line.split(":", 1)[1].strip()
-                    break
+        facts["cpu_model"] = _cpu_model()
         facts["kernel"] = os.uname().release
         with open("/proc/meminfo", "r") as handle:
             for line in handle:

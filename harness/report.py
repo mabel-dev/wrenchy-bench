@@ -174,6 +174,58 @@ def detect(current: dict, history: list[dict]) -> list[dict]:
     return sorted(findings, key=lambda f: (-f.get("ratio", 99), f["line"], f["query"]))
 
 
+# AWS's own name for the silicon in each Graviton generation. lscpu only knows
+# the Arm core (Neoverse-V2), which is not what the instance is sold as.
+GRAVITON = {"6": "AWS Graviton2", "7": "AWS Graviton3", "8": "AWS Graviton4"}
+
+
+# GiB of memory per vCPU in AWS's compute / general / memory-optimised classes.
+MEMORY_PER_VCPU = {"c": 2, "m": 4, "r": 8}
+
+
+def catalogue_spec(instance_type: str) -> tuple[int | None, int | None]:
+    """(vCPUs, GiB) as AWS sells the instance, derived from its name.
+
+    Measured MemTotal is always a little under the sold figure (the kernel
+    keeps some), so the site quotes the catalogue number people recognise.
+    """
+    family, _, size = instance_type.partition(".")
+    if size == "large":
+        vcpus = 2
+    elif size == "xlarge":
+        vcpus = 4
+    elif size.endswith("xlarge") and size[: -len("xlarge")].isdigit():
+        vcpus = 4 * int(size[: -len("xlarge")])
+    else:
+        return None, None
+    ratio = MEMORY_PER_VCPU.get(family[:1])
+    return vcpus, (vcpus * ratio if ratio else None)
+
+
+def host_spec(run: dict) -> dict:
+    """The box the run measured on, as the site shows it."""
+    host = run.get("host") or {}
+    instance_type = run.get("instance_type") or ""
+    family = instance_type.split(".")[0]
+    cpu = host.get("cpu_model")
+    if cpu and cpu.startswith("0x"):
+        cpu = None  # arm64 /proc/cpuinfo's implementer code, not a name
+    # Graviton families are <class><generation>g[d|n|e...], e.g. c8g, m7gd.
+    if len(family) >= 3 and family[1].isdigit() and family[2] == "g":
+        processor = GRAVITON.get(family[1])
+        if processor:
+            cpu = f"{processor} ({cpu})" if cpu else processor
+    vcpus, memory_gib = catalogue_spec(instance_type)
+    return {
+        "instance_type": instance_type or None,
+        "availability_zone": run.get("availability_zone") or None,
+        "cpu_model": cpu,
+        "cpu_count": host.get("cpu_count") or vcpus,
+        "memory_gib": memory_gib,
+        "mem_total_bytes": host.get("mem_total_bytes"),
+    }
+
+
 def summarise(run: dict, current: dict) -> dict:
     """The compact per-run object the site reads."""
     totals = {}
@@ -201,6 +253,7 @@ def summarise(run: dict, current: dict) -> dict:
         "engine_build": run.get("engine_build"),
         "git_sha": run.get("git_sha"),
         "instance_type": run.get("instance_type"),
+        "host": host_spec(run),
         "corpus_hashes": run.get("corpus_hashes"),
         "calibration": run.get("calibration"),
         "totals": totals,
@@ -272,7 +325,9 @@ def main() -> int:
     index = [
         {
             key: run_summary.get(key)
-            for key in ("run_id", "run_date", "status", "engine_version", "engine_build", "totals")
+            for key in (
+                "run_id", "run_date", "status", "engine_version", "engine_build", "host", "totals"
+            )
         }
         for run_summary in load_history(args.site_data)
     ]

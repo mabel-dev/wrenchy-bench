@@ -76,6 +76,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  },
  {
@@ -155,6 +163,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  },
  {
@@ -234,6 +250,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  },
  {
@@ -313,6 +337,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  },
  {
@@ -392,6 +424,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  },
  {
@@ -471,6 +511,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  },
  {
@@ -550,6 +598,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  },
  {
@@ -629,6 +685,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  },
  {
@@ -708,6 +772,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  },
  {
@@ -787,6 +859,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  },
  {
@@ -866,6 +946,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  },
  {
@@ -945,6 +1033,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  },
  {
@@ -1024,6 +1120,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  },
  {
@@ -1103,6 +1207,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  },
  {
@@ -1182,6 +1294,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  },
  {
@@ -1261,6 +1381,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  },
  {
@@ -1340,6 +1468,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  },
  {
@@ -1419,6 +1555,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  },
  {
@@ -1498,6 +1642,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  },
  {
@@ -1577,6 +1729,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  },
  {
@@ -1656,6 +1816,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  },
  {
@@ -1735,6 +1903,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  },
  {
@@ -1814,6 +1990,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  },
  {
@@ -1893,6 +2077,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  },
  {
@@ -1972,6 +2164,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  },
  {
@@ -2051,6 +2251,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  },
  {
@@ -2130,6 +2338,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  },
  {
@@ -2209,6 +2425,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  },
  {
@@ -2288,6 +2512,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  },
  {
@@ -2367,6 +2599,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  },
  {
@@ -2446,6 +2686,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  },
  {
@@ -2525,6 +2773,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  },
  {
@@ -2604,6 +2860,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  },
  {
@@ -2683,6 +2947,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  },
  {
@@ -2762,6 +3034,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  },
  {
@@ -2841,6 +3121,14 @@
     "timeout": 0,
     "unstable": 0
    }
+  },
+  "host": {
+   "availability_zone": null,
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": null,
+   "memory_gib": 32
   }
  }
 ]

@@ -16,6 +16,14 @@
  "engine_build": 3488,
  "engine_version": "0.9.94",
  "git_sha": null,
+ "host": {
+  "availability_zone": null,
+  "cpu_count": 16,
+  "cpu_model": "AWS Graviton4",
+  "instance_type": "c8g.4xlarge",
+  "mem_total_bytes": null,
+  "memory_gib": 32
+ },
  "instance_type": "c8g.4xlarge",
  "lines": {
   "clickbench_parquet": {

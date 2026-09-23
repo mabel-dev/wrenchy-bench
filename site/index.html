@@ -10,7 +10,7 @@
     --ground:#F4F6F4; --surface:#FFF; --sunken:#EAEEEB;
     --ink:#111715; --ink-soft:#4B5551; --muted:#6E7873;
     --rule:#D6DDD8; --rule-firm:#B9C4BE;
-    --accent:#14655A; --signal:#9B6410; --alarm:#9E352C; --ok:#3D6B2E; --flat:#3061A6;
+    --accent:#14655A; --signal:#9B6410; --alarm:#9E352C; --ok:#3D6B2E; --flat:#3061A6; --record:#7A5AA6;
     --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
     --serif: ui-serif, "Iowan Old Style", Charter, Georgia, serif;
   }
@@ -19,7 +19,7 @@
       --ground:#0D110F; --surface:#151B18; --sunken:#1B221F;
       --ink:#E4EAE6; --ink-soft:#B3BDB8; --muted:#8B9791;
       --rule:#26302C; --rule-firm:#3A4741;
-      --accent:#57B5A2; --signal:#D3A055; --alarm:#DC8177; --ok:#86BC6E; --flat:#6FA3E0;
+      --accent:#57B5A2; --signal:#D3A055; --alarm:#DC8177; --ok:#86BC6E; --flat:#6FA3E0; --record:#B39DDB;
     }
   }
   * { box-sizing:border-box; }
@@ -72,11 +72,11 @@
   [data-tip] { cursor:crosshair; }
   .avg { stroke:var(--muted); stroke-width:1.25; stroke-dasharray:4 3; fill:none; opacity:0.85; }
   .legend { font-family:var(--mono); font-size:11px; color:var(--muted);
-            display:flex; gap:20px; padding:0 14px 12px; flex-wrap:wrap; }
+            display:flex; gap:20px; padding:0 14px 12px; flex-wrap:wrap; justify-content:center; }
   .legend span { display:inline-flex; align-items:center; gap:7px; }
   .legend i { display:inline-block; width:18px; height:0; border-top:2px solid var(--accent); }
   .legend i.dash { border-top:2px dashed var(--muted); }
-  .legend i.dot { width:8px; height:8px; border:0; border-radius:50%; background:var(--ok); }
+  .legend i.dot { width:8px; height:8px; border:0; border-radius:50%; background:var(--record); }
   /* The tooltip is fixed-positioned and pointer-events:none so it can never sit
      between the cursor and the next hit target it is describing. */
   #tip { position:fixed; z-index:10; pointer-events:none; opacity:0; transition:opacity .08s;
@@ -231,7 +231,7 @@ function suiteChart(history, w = 900, h = 140) {
   records.delete(0);
 
   const dots = values.map((v, i) => records.has(i)
-    ? `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="4" fill="var(--ok)"/>`
+    ? `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="4" fill="var(--record)"/>`
     : `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="2.5" fill="var(--accent)"/>`
   ).join("");
   const targets = hits(values, meta, x, padL, w - padR, h, fmt.secs, (i, m) => {
@@ -281,10 +281,27 @@ function render(index) {
   const headline = `
     <dl class="headline">
       <div><dt>Latest run</dt><dd>${latest.run_id}</dd></div>
-      <div><dt>Status</dt><dd><span class="chip ${latest.status}">${statusLabel(latest.status)}</span></dd></div>
       <div><dt>Engine</dt><dd>${latest.engine_version}+${latest.engine_build}</dd></div>
       <div><dt>Runs recorded</dt><dd>${index.length}</dd></div>
+      ${machine(latest.host)}
     </dl>`;
+
+  // The box the numbers came from. Absolute timings mean nothing without it,
+  // and a change of instance type is a trend break, not an engine change.
+  function machine(host) {
+    if (!host || !host.instance_type) return "";
+    // Graviton families are <class><generation>g…, e.g. c8g; the rest are x86.
+    const arch = /^[a-z]\dg/.test(host.instance_type) ? "ARM" : "x86";
+    // "AWS Graviton4 (Neoverse-V2)" -> "AWS Graviton4"; the core is in the tip.
+    const cpu = (host.cpu_model || host.instance_type).replace(/\s*\(.*\)$/, "");
+    const detail = [arch, host.cpu_count != null ? `${host.cpu_count} CPUs` : null]
+      .filter(Boolean).join(", ");
+    const memory = host.memory_gib != null ? `${host.memory_gib} GiB`
+      : host.mem_total_bytes != null ? `${(host.mem_total_bytes / 2 ** 30).toFixed(1)} GiB` : null;
+    const tip = [host.instance_type, host.cpu_model, memory && `${memory} memory`]
+      .filter(Boolean).join(" · ");
+    return `<div><dt>Hardware</dt><dd data-tip="${esc(`Hardware|${tip}`)}">${esc(`${cpu} (${detail})`)}</dd></div>`;
+  }
 
   // The best and worst this benchmark has ever recorded, with the run that set
   // it. Returned as an index into the series rather than a bare value so the
@@ -376,7 +393,7 @@ function render(index) {
       </tr></thead>
       <tbody>${rows}</tbody>
     </table></div>
-    <h2>Fastest runs, entire suite</h2>
+    <h2>Entire suite over time</h2>
     <div class="scroller">${suiteChart(history)}</div>
     <h2>Last five runs</h2>
     <div class="scroller"><table>
