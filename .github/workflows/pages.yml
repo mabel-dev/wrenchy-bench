@@ -1,6 +1,6 @@
 name: pages
 
-# The site is static and reads the JSON the weekly workflow commits into
+# The site is static and reads the JSON the collector workflow commits into
 # site/data. No build step: publishing is a copy, so a broken deploy can never
 # be a broken build.
 

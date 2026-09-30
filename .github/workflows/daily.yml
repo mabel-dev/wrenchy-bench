@@ -1,0 +1,77 @@
+name: daily benchmark run
+
+# Launches one benchmark run daily at 11:00 UTC. The Lambda launches the EC2
+# instance with its configured engine version (latest by default). It does not
+# poll PyPI or compare versions. It dispatches collect.yml to wait for the
+# bundle, publish telemetry, and update the results site.
+
+on:
+  schedule:
+    - cron: "0 09 * * *" # 09:00 UTC daily
+  workflow_dispatch:
+
+permissions:
+  id-token: write # OIDC to AWS
+  actions: write # to dispatch collect.yml
+
+concurrency:
+  group: daily-benchmark
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-1
+  AWS_BENCH_ROLE_ARN: arn:aws:iam::045121776141:role/opteryx-bench-actions
+
+jobs:
+  launch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_BENCH_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - id: inflight
+        name: Refuse to launch while a run is already going
+        # Avoid overlapping instances if a previous daily run is still active.
+        run: |
+          set -euo pipefail
+          live=$(aws ec2 describe-instances \
+            --filters \
+              "Name=tag:project,Values=wrenchy-bench" \
+              "Name=instance-state-name,Values=pending,running,shutting-down" \
+            --query 'Reservations[].Instances[].InstanceId' \
+            --output text)
+          if [ -n "${live}" ] && [ "${live}" != "None" ]; then
+            printf '::warning::run already in flight (%s); skipping launch\n' \
+              "${live}"
+            echo "proceed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "proceed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - id: launch
+        name: Start the run
+        if: steps.inflight.outputs.proceed == 'true'
+        # Lambda owns the AMI, instance type, user-data, tags and kill-switch.
+        # An empty event uses its configured engine version (latest by default).
+        run: |
+          set -euo pipefail
+          aws lambda invoke --function-name opteryx-bench-launcher \
+            --payload '{}' \
+            --cli-binary-format raw-in-base64-out /tmp/launch.json >/dev/null
+          cat /tmp/launch.json
+          run_id=$(python3 -c \
+            'import json; print(json.load(open("/tmp/launch.json"))["run_id"])')
+          echo "run_id=${run_id}" >> "$GITHUB_OUTPUT"
+
+      - name: Hand off to the collector
+        if: steps.inflight.outputs.proceed == 'true'
+        # Dispatch the collector for this run id so it waits for and collects
+        # the exact bundle that this launch will write.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run collect.yml --ref main \
+            -f run_id='${{ steps.launch.outputs.run_id }}'
+          echo "collector dispatched for ${{ steps.launch.outputs.run_id }}"

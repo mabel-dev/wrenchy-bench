@@ -1,10 +1,10 @@
 # Wrenchy Bench
 
-Weekly performance baselining for [Opteryx](https://github.com/mabel-dev/opteryx-core).
+Daily performance baselining for [Opteryx](https://github.com/mabel-dev/opteryx-core).
 
-Seven workloads, one `c8g.4xlarge`, once a week. Corpora are built once and
-stored, never regenerated. Results land in `opteryx.benchmarks.telemetry` and
-on a [GitHub Pages site](https://mabel-dev.github.io/wrenchy-bench/).
+Seven workloads, one `c8g.4xlarge`, daily at 11:00 UTC. Corpora are built once
+and stored, never regenerated. Results land in `opteryx.benchmarks.telemetry`
+and on a [GitHub Pages site](https://mabel-dev.github.io/wrenchy-bench/).
 
 | Line | Format | Corpus | Queries | Iterations | Size |
 |---|---|---|--:|--:|--:|
@@ -16,17 +16,13 @@ on a [GitHub Pages site](https://mabel-dev.github.io/wrenchy-bench/).
 | ClickBench partitioned | Parquet · zstd | `hits_partitioned` | 43 | 5 | 14.8 GB |
 | ClickBench | Skene · lz4 | `hits_skene` | 43 | 5 | 12.4 GB |
 
-280 queries, ≈ 4 hours, ≈ $3 a run. Stock CPython 3.14 — execution is native
-and already runs with the GIL released, so the free-threaded build bought
-nothing.
+280 queries, ≈ 20 minutes per run. Stock CPython 3.14.
 
 > **ClickBench parquet is the canonical upstream corpus** — the 100 objects
 > from `datasets.clickhouse.com/hits_compatible/athena_partitioned/` that every
-> published ClickBench "Parquet (partitioned)" figure is measured against. An
-> earlier version used the same rows rewritten through rugo's writer, which
-> made the corpus consistent with our own writer policy and the *number*
-> incomparable with everyone else's. This line exists to sit beside DuckDB and
-> ClickHouse on identical bytes; the Skene line is where our format is tested.
+> published ClickBench "Parquet (partitioned)" figure is measured against.
+> This line exists to sit beside DuckDB and ClickHouse on identical bytes;
+> the Skene line is where our format is tested.
 
 > **JOB and H2O do not stipulate a storage format.** Neither upstream benchmark
 > ships one — both distribute *rows* (CSV from CWI, and `datagen.R`), not files.
@@ -40,7 +36,9 @@ a number is attributable to an exact opteryx-core release rather than to
 
 ## Comparability
 
-A weekly benchmark's only job is to make week *n* comparable to week *n−1*.
+Each benchmark's job is to make this run comparable to the previous run.
+
+Results are compared against the trailing baseline (four non-suspect runs).
 
 - **Codec postures differ by design.** Skene mirrors are `lz4` (the local
   benchmark posture); parquet corpora are `zstd`/`snappy` (the storage

@@ -245,7 +245,7 @@ def main() -> int:
         os.environ["OPTERYX_CREDENTIALS"], os.environ.get("OPTERYX_CLIENT_ID", "xb500")
     )
     token = get_token(client_id, client_secret)
-    message = f"weekly bench {run['run_id']} ({run['engine_version']}+{run['engine_build']})"
+    message = f"daily bench {run['run_id']} ({run['engine_version']}+{run['engine_build']})"
 
     for dataset, blob in ((TABLE_QUERIES, queries_blob), (TABLE_RUNS, runs_blob)):
         result = upload_table(token, dataset, blob, message)

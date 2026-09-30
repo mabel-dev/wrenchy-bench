@@ -33,14 +33,14 @@ nothing downstream would report.
 
 ### 2. `make job` / `make h2o` should run on Skene too
 
-So that a number quoted from a developer laptop and a number from the weekly
+So that a number quoted from a developer laptop and a number from the daily
 run are the same measurement. This needs `--variant` support in
 `tests/performance/{job,h2o}/run.py` — the dataset prefix is currently the
 constant `testdata.job.` / `testdata.h2o.<size>.` — plus the mirror-generation
 stanza in the Makefile targets, mirroring what `tpch` and `clickbench-skene`
 already do. H2O's default size moves to `medium` and `small` is dropped.
 
-**Tracked as a companion PR against `opteryx-core`.** The weekly suite does not
+**Tracked as a companion PR against `opteryx-core`.** The daily suite does not
 depend on it; it exists so local and CI numbers stay comparable.
 
 ### 3. A missing allocator preload should be a hard failure
@@ -49,7 +49,7 @@ depend on it; it exists so local and CI numbers stay comparable.
 its own comment, falls back to *no preload* if the allocator is not found — the
 target still runs.
 
-`harness/run_suite.py` already refuses to start in that state, so the weekly run
+`harness/run_suite.py` already refuses to start in that state, so the daily run
 is covered. A developer running `make tpch` locally still gets the silent
 version, and that is where a misleading number gets quoted from.
 

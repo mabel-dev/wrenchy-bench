@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Instance bootstrap for the weekly benchmark run. Passed as EC2 user-data by
+# Instance bootstrap for the daily benchmark run. Passed as EC2 user-data by
 # the launcher; templated with the values below.
 #
 #   ENGINE_VERSION  opteryx-core version to install and measure ("latest" or a pin)
@@ -89,7 +89,7 @@ retry_with_timeout() {
     return 1
 }
 
-echo "=== weekly bench ${RUN_ID} · engine ${ENGINE_VERSION} · harness ${HARNESS_REF}"
+echo "=== daily bench ${RUN_ID} · engine ${ENGINE_VERSION} · harness ${HARNESS_REF}"
 mkdir -p "${WORK}"
 
 # --- Toolchain ---------------------------------------------------------
@@ -141,10 +141,9 @@ source .venv/bin/activate
 PYTHON="${WORK}/.venv/bin/python"
 
 # --- Install the engine -------------------------------------------------
-# The PUBLISHED WHEEL, not a source build: opteryx-core releases 4-5x/week,
-# so a wheel resolves finer than a weekly benchmark can anyway, measures what
-# users get, and removes the whole build toolchain from this box. Version is
-# recorded in the run manifest.
+# The PUBLISHED WHEEL, not a source build: it measures what users get and
+# removes the whole build toolchain from this box. The version is recorded in
+# the run manifest.
 retry_with_timeout "harness clone" 60 bash -c \
     "rm -rf '${WORK}/wrenchy-bench' && git clone --depth 1 --branch '${HARNESS_REF}' \
     https://github.com/mabel-dev/wrenchy-bench.git '${WORK}/wrenchy-bench'"

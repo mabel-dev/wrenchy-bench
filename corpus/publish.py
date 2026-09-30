@@ -1,6 +1,6 @@
 """Build a corpus manifest and publish the corpus. Run once per corpus.
 
-The weekly run never generates data. Every corpus is built out-of-band, stamped
+Daily runs never generate data. Every corpus is built out-of-band, stamped
 with a manifest, and published; the run syncs it and verifies the hash before a
 single query executes.
 

@@ -6,7 +6,7 @@ is an `@NAME@` token, filled from one of two sets here.
     VALIDATION   the values Clause 2.4.x.4 fixes for validating against the
                  qualification database (SF1). harness/validate_tpch.py runs
                  these and compares against the published answers.
-    BENCH        the values the weekly suite has always run. Kept as they were
+    BENCH        the values the daily suite has always run. Kept as they were
                  so the trend lines do not move; all are inside the ranges the
                  spec allows, but only some equal the validation values.
 

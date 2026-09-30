@@ -172,7 +172,7 @@ def probe_child(argv: list[str], **popen_kwargs) -> tuple[int, Reading, float]:
     """Run a benchmark line as a child and measure the child.
 
     Returns (exit_code, reading, wall_ms). Line-level rather than per-query, but
-    it needs no change to opteryx-core, so it is what the first weekly runs use.
+    it needs no change to opteryx-core, so it is what the daily suite uses.
     ``ru_maxrss`` for a reaped child is that child's own peak — no reset needed.
     """
     import subprocess

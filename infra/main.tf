@@ -1,15 +1,9 @@
 # Wrenchy Bench infrastructure.
 #
-# The trigger lives in AWS. EventBridge Scheduler fires a Lambda weekly, the
-# Lambda launches the instance, the instance runs the suite and writes its
-# bundle to S3. Nothing outside this account can start an EC2 instance in it:
-# no principal outside the account holds ec2:RunInstances, and the one external
-# identity that exists (GitHub, below) is read-only.
-#
-# GitHub still COLLECTS — a scheduled workflow reads the finished bundle from
-# S3, compares it against history, and publishes the site. That half needs only
-# read access, and keeping it in Actions means a bad comparison can be re-run
-# without paying for another four hours of EC2.
+# GitHub Actions runs the daily schedule and invokes the launcher Lambda. The
+# Lambda launches the instance, which runs the suite and writes its bundle to S3.
+# Nothing outside this account can call ec2:RunInstances; GitHub can invoke only
+# the launcher Lambda and collect results through its scoped Actions role.
 
 terraform {
   required_version = ">= 1.6"
@@ -127,9 +121,9 @@ resource "aws_iam_instance_profile" "instance" {
 # GitHub Actions identity, via OIDC. No long-lived access keys anywhere.
 # ---------------------------------------------------------------------------
 
-# The collector's identity. It can read finished bundles and the platform
-# credential, and nothing else — no ec2:*, no iam:PassRole. Compare with the
-# previous version of this file, where the same role could launch instances.
+# GitHub Actions role. Workflows can collect results, inspect and clean up this
+# project's runners, and invoke only the launcher Lambda; they cannot call
+# ec2:RunInstances or iam:PassRole.
 resource "aws_iam_openid_connect_provider" "github" {
   url             = "https://token.actions.githubusercontent.com"
   client_id_list  = ["sts.amazonaws.com"]
@@ -179,25 +173,19 @@ resource "aws_iam_role_policy" "actions" {
         Resource = var.opteryx_pat_secret_arn
       },
       {
-        # Read-only: find-run.sh maps a run id back to its instance so the
-        # kill-switch alarm can be named. No mutation of any kind.
+        # The in-flight guard and collector map a run id to its instance.
         Effect   = "Allow"
         Action   = "ec2:DescribeInstances"
         Resource = "*"
       },
       {
-        # Tidy up the kill-switch alarm after a run reports. Deleting an alarm
-        # is the only mutation the collector can make in the account.
+        # Disarm the kill-switch only after the completed instance is gone.
         Effect   = "Allow"
         Action   = "cloudwatch:DeleteAlarms"
         Resource = "arn:aws:cloudwatch:*:*:alarm:opteryx-bench-killswitch-*"
       },
       {
-        # Clean up the run it just collected. The collector's last step used to
-        # call this and silently fail for want of this permission, while the
-        # delete-alarms beside it succeeded — disarming the kill-switch of an
-        # instance it could not stop. Scoped by tag, so it can only terminate
-        # this project's own runners, never anything else in the account.
+        # Allow the collector to stop only this project's completed runners.
         Effect   = "Allow"
         Action   = "ec2:TerminateInstances"
         Resource = "*"
@@ -206,13 +194,9 @@ resource "aws_iam_role_policy" "actions" {
         }
       },
       {
-        # Start a run. This is the ONE function and nothing else: the launcher
-        # still chooses the AMI, instance type, user-data, tags and kill-switch,
-        # so the caller can say "benchmark this version" and cannot say "run me
-        # an EC2 instance". `ec2:RunInstances` remains unreachable from outside
-        # the account — the property launch.py is protecting — and this is what
-        # lets the release trigger be driven from this repo rather than needing
-        # a second scheduler.
+        # Start a run through the one constrained entry point. The Lambda owns
+        # the AMI, instance type, user-data, tags and kill-switch; Actions cannot
+        # call `ec2:RunInstances` directly.
         Effect   = "Allow"
         Action   = "lambda:InvokeFunction"
         Resource = aws_lambda_function.launcher.arn
@@ -278,14 +262,14 @@ resource "aws_sns_topic" "alerts" {
   tags = local.tags
 }
 
-# The 8h kill-switch is created per-instance at launch (infra/launch.sh) rather
+# The 1h kill-switch is created per-instance by infra/lambda/launch.py rather
 # than declared here: a static alarm cannot carry an InstanceId dimension for an
 # instance that does not exist yet, and a wildcard dimension matches nothing.
 # This topic remains for the collect job's failure notifications.
 
 
 # ---------------------------------------------------------------------------
-# The trigger: EventBridge Scheduler -> Lambda -> RunInstances.
+# The launcher: GitHub Actions -> Lambda -> RunInstances.
 #
 # The bootstrap script is uploaded to S3 and read by the Lambda at launch,
 # rather than baked into the function. The script is data, not code: changing
@@ -396,48 +380,4 @@ resource "aws_lambda_function" "launcher" {
       HARNESS_REF      = var.harness_ref
     }
   }
-}
-
-resource "aws_scheduler_schedule" "weekly" {
-  name                         = "${local.name}-weekly"
-  schedule_expression          = "cron(0 2 ? * SUN *)"
-  schedule_expression_timezone = "UTC"
-  # No catch-up. A run that missed its window is a run against a different
-  # engine than the one it was scheduled for, and a benchmark that fires late
-  # in a burst is worse than one that skips a week.
-  flexible_time_window { mode = "OFF" }
-
-  target {
-    arn      = aws_lambda_function.launcher.arn
-    role_arn = aws_iam_role.scheduler.arn
-    retry_policy {
-      maximum_retry_attempts = 0
-    }
-  }
-}
-
-resource "aws_iam_role" "scheduler" {
-  name = "${local.name}-scheduler"
-  tags = local.tags
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect    = "Allow"
-      Action    = "sts:AssumeRole"
-      Principal = { Service = "scheduler.amazonaws.com" }
-    }]
-  })
-}
-
-resource "aws_iam_role_policy" "scheduler" {
-  name = "${local.name}-scheduler"
-  role = aws_iam_role.scheduler.id
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect   = "Allow"
-      Action   = "lambda:InvokeFunction"
-      Resource = aws_lambda_function.launcher.arn
-    }]
-  })
 }

@@ -2,7 +2,7 @@
 
 Deliberately compares against the JSON history committed in this repo rather
 than querying opteryx.benchmarks.telemetry. The suite must not depend on the
-thing it measures: the weeks you most want the numbers are exactly the weeks
+thing it measures: the days you most want the numbers are exactly the days
 something is broken, and regression detection that stops working during an
 outage is not regression detection. The telemetry tables are the richer surface
 for ad-hoc questions; this is the mechanism that has to keep working.
@@ -263,7 +263,7 @@ def summarise(run: dict, current: dict) -> dict:
 
 def render_markdown(summary: dict, findings: list[dict]) -> str:
     out = [
-        f"# Weekly bench · {summary['run_id']}",
+        f"# Daily bench · {summary['run_id']}",
         "",
         f"**{summary['status'].upper()}** · "
         f"opteryx {summary['engine_version']}+{summary['engine_build']} · "

@@ -7,8 +7,8 @@ absorbing an unexpected column, and every change here is a reviewed change.
 Three tables, because detection, provenance and diagnosis have different row
 counts and different lifetimes:
 
-  benchmarks            ~2,000 rows/week   the fact table; what regressions are detected from
-  benchmark_runs        1 row/week         the environment a run happened in
+  benchmarks            ~2,000 rows/day    the fact table; what regressions are detected from
+  benchmark_runs        1 row/day          the environment a run happened in
   benchmark_operations  on demand          per-operator breakdown, from the tracing pass only
 """
 

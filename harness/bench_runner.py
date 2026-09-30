@@ -41,10 +41,9 @@ from harness.probe import Probe  # noqa: E402
 def bind_engine():
     """Import the installed opteryx and report exactly which one it is.
 
-    The suite measures the PUBLISHED WHEEL. opteryx-core releases several times
-    a week, so a wheel tracks development finer than a weekly benchmark can
-    resolve, and it measures what users actually get rather than whatever main
-    happened to be at 02:00 on a Sunday.
+    The suite measures the PUBLISHED WHEEL that users can install, rather than
+    an arbitrary source checkout. Its version and build identify the engine that
+    produced the benchmark results.
 
     The resolved path is printed and recorded, not asserted: an editable
     checkout on the path is a legitimate way to run this locally, but a run

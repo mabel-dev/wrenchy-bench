@@ -49,8 +49,8 @@ def resolve_preload(python: str) -> str:
 
     The Makefile's BENCH_PRELOAD falls back to no preload when the allocator is
     not found and the target still runs. On a box that exists only to produce
-    comparable numbers that is a whole week of results that cannot be compared
-    to any other week, so here it is a hard stop.
+    comparable numbers that is a day of results that cannot be compared
+    to the baseline, so here it is a hard stop.
     """
     path = _sh(
         [python, "-c", "import draken; print(draken.preload_library_path() or '')"],
@@ -59,7 +59,7 @@ def resolve_preload(python: str) -> str:
         raise RuntimeError(
             "allocator preload did not resolve (draken.preload_library_path() is empty). "
             "Running without it changes every number in the suite and would silently "
-            "produce a week of incomparable results."
+            "produce a day of incomparable results."
         )
     return path
 
@@ -83,9 +83,7 @@ def engine_identity(python: str) -> dict:
     """Version, build and resolved path of the INSTALLED engine.
 
     There is no git sha any more: the suite measures a published release, so
-    `<version>+<build>` IS the identity, and it is a more precise one than a
-    branch name — `main` at 02:00 on a Sunday is not a thing anyone can go back
-    and re-measure.
+    `<version>+<build>` is the identity and is more precise than a branch name.
     """
     identity = _sh(
         [
@@ -255,7 +253,7 @@ def calibration_total(records: list[dict]) -> float:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Run the weekly Opteryx benchmark suite")
+    parser = argparse.ArgumentParser(description="Run the daily Opteryx benchmark suite")
     parser.add_argument(
         "--data-root",
         required=True,

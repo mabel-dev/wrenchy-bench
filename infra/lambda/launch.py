@@ -1,9 +1,7 @@
-"""Launch the weekly benchmark instance. Fired by EventBridge Scheduler.
+"""Launch the daily benchmark instance when invoked by GitHub Actions.
 
-Replaces the GitHub Actions launch job. The point is not fewer parts — it is
-roughly parts-neutral — but that nothing outside this AWS account can start an
-EC2 instance in it. There is no OIDC provider and no external principal with
-`ec2:RunInstances`.
+GitHub Actions can invoke this function but cannot call `ec2:RunInstances`
+directly. The Lambda owns instance configuration and starts the EC2 runner.
 
 Stdlib + boto3 only (boto3 is in the Lambda runtime), so there is nothing to
 package: the function is a single file uploaded as a zip by terraform.
@@ -171,7 +169,7 @@ def handler(event, context):
             ],
         )
     except Exception as exception:
-        # A launch that fails silently is a week with no data and no signal.
+        # A launch that fails silently is a day with no data and no signal.
         sns.publish(
             TopicArn=ALERTS_TOPIC,
             Subject=f"wrenchy-bench: launch FAILED for {run_id}",
@@ -202,10 +200,9 @@ def handler(event, context):
             ),
         )
 
-    # engine_version is echoed because the caller may not have chosen it — a
-    # scheduled run passes nothing and gets "latest", and the log line is then
-    # the only record of what was ASKED for, distinct from what the box
-    # actually installed (which the run manifest records).
+    # engine_version is echoed because the daily Actions workflow passes an
+    # empty event and gets the configured default (latest); the log line records
+    # the requested version separately from the installed version in the manifest.
     result = {
         "run_id": run_id,
         "instance_id": instance_id,

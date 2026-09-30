@@ -1,17 +1,9 @@
 name: collect benchmark results
 
-# The COLLECTOR. Launching happens in AWS (EventBridge Scheduler -> Lambda), so
-# nothing here can start an EC2 instance — this workflow's AWS role is read-only
-# on the results bucket plus the platform credential.
-#
-# Runs three hours after the 02:00 UTC launch, by which time a healthy run is
-# usually finished, and waits for the rest. If it is cancelled or fails, the
-# instance still completes and still writes its bundle: re-run this workflow and
-# the results are picked up, with no second four-hour run.
+# The collector is dispatched by daily.yml after Lambda starts the runner.
+# Re-running this workflow collects an existing bundle; it does not launch EC2.
 
 on:
-  schedule:
-    - cron: "0 5 * * 0" # Sundays 05:00 UTC, three hours after the launch
   workflow_dispatch:
     inputs:
       run_id:
@@ -20,12 +12,12 @@ on:
 
 permissions:
   contents: write
-  id-token: write # OIDC to AWS, read-only
+  id-token: write # OIDC to AWS
   issues: write
   actions: write # to dispatch pages.yml explicitly — see the deploy step below
 
 concurrency:
-  group: weekly-benchmark
+  group: benchmark-collector
   cancel-in-progress: false
 
 env:
@@ -90,7 +82,7 @@ jobs:
       - name: Publish to opteryx.telemetry
         # Runs after the site data is written and never gates it. The suite
         # must not depend on the thing it measures: a platform outage costs a
-        # table commit, not a week of history.
+        # table commit, not a day of history.
         continue-on-error: true
         run: |
           pip install --quiet rugo
@@ -156,7 +148,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh label create benchmark \
-            --description "Raised by the weekly benchmark collector" \
+            --description "Raised by the daily benchmark collector" \
             --color B60205 2>/dev/null || true
           gh issue create \
             --title "Benchmark regression · ${{ steps.find.outputs.run_id }}" \

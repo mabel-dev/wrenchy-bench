@@ -19,10 +19,9 @@ from dataclasses import dataclass
 
 # S3, in the runner's own region, is where the corpora are read from.
 #
-# GCS to EC2 is internet egress at ~$0.12/GB: ~76GB a week is ~$9 a run, or
-# ~$40/month — more than the compute it feeds and more than everything else in
-# this system combined. S3 to EC2 in-region is free and 76GB of S3 Standard is
-# ~$1.75/month.
+# GCS to EC2 is internet egress at ~$0.12/GB: ~76GB per run is ~$9, or
+# ~$270/month at daily cadence — more than the compute it feeds. S3 to EC2
+# in-region is free, and 76GB of S3 Standard is ~$1.75/month.
 S3_CORPUS_PREFIX = "s3://opteryx-bench-corpora"
 S3_RESULTS_PREFIX = "s3://opteryx-bench-results"
 

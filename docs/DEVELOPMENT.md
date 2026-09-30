@@ -4,46 +4,23 @@ How this harness is built, run, and operated.
 
 ## How a run happens
 
-The box installs the **published wheel** rather than building from source.
-opteryx-core releases four or five times a week, so a wheel tracks development
-finer than a weekly benchmark can resolve, measures what users actually get,
-and takes the whole toolchain off a machine that only needs to run queries.
+The box installs the **published wheel** rather than building from source. A
+GitHub Actions workflow launches one run daily at 11:00 UTC by invoking the AWS
+launcher Lambda. It does not check PyPI or compare versions; the Lambda uses its
+configured engine version (latest by default). The returned run ID is passed to
+the collector workflow, which waits for the bundle, compares results against
+history, publishes telemetry, and updates the site. A run typically takes about
+20 minutes; the 1-hour kill-switch bounds a runaway instance.
+
 The version is recorded per run, so a number is attributable to an exact
 release rather than to "whatever main was".
-
-**Launching happens in AWS. GitHub only collects.** Nothing outside the account
-can start an EC2 instance in it — the one external identity that exists is
-read-only on the results bucket.
-
-```
-AWS                                    GitHub Actions
-────────────────────────────────────────────────────────────────
-EventBridge Scheduler, Sun 02:00 UTC
-  └─ Lambda opteryx-bench-launcher
-       └─ RunInstances + arms the 8h kill-switch
-            └─ the box
-               shutdown -h +420 (watchdog, first)
-               pip install opteryx-core (the published wheel)
-               s3 sync the corpora, verify every manifest
-               SF1 bookend, 7 lines, SF1 bookend
-               write bundle to S3, STATUS last
-               terminates itself
-                                       Sun 05:00 UTC (or dispatch)
-                                       find newest run, wait for STATUS
-                                       compare against history
-                                       commit site/data, deploy Pages
-                                       publish to opteryx.benchmarks
-```
-
-Collection is a separate schedule so a failed comparison can be re-run without
-paying for another four-hour benchmark: the bundle is already in S3, so
-re-running the workflow picks it up. It also means the 6-hour Actions job
-ceiling never decides whether a run counts.
 
 Start a run by hand with:
 
 ```bash
-aws lambda invoke --function-name opteryx-bench-launcher /dev/stdout
+aws lambda invoke --function-name opteryx-bench-launcher \
+  --payload '{}' --cli-binary-format raw-in-base64-out /tmp/launch.json
+cat /tmp/launch.json
 ```
 
 ## Layout
@@ -82,8 +59,8 @@ populated from the first run.
 
 Read from **S3** in the runner's region — `s3://opteryx-bench-corpora/<version>/`
 — where the transfer is free. GCS to EC2 is internet egress at ~$0.12/GB: ~76 GB
-a week is ~$9 a run, ~$40/month, more than the compute it feeds and more than
-everything else here combined.
+per run is ~$9, or about $270/month at daily cadence, more than the compute it
+feeds. In-region S3 transfer avoids that egress cost.
 
 `--also-gcs` writes a second copy to `gs://opteryx_data/benchmarks/<version>/`.
 The runner never reads it. It exists because **Opteryx has a GCS filesystem and
@@ -122,7 +99,7 @@ Known results and why (2026-09-28, local opteryx-core 0.9.143+3596: 21 PASS, 1 D
   constant folder computed `0.06 + 0.01` in floating point (0.06999999999999999),
   so `l_discount between 0.06 - 0.01 and 0.06 + 0.01` dropped every 0.07 row
   (75,207,768 vs 123,141,078). Fixed by folding decimal-point literal arithmetic
-  exactly. Weekly runs on older wheels timed a wrong-result Q6, so its history
+  exactly. Daily runs on older wheels timed a wrong-result Q6, so its history
   before that release is not comparable.
 - **q13 DATA**: the corpora's free-text columns (every comment and address) do
   not match DuckDB's dbgen; keys, numbers, dates and enums are identical.
@@ -144,9 +121,9 @@ and read [PREFLIGHT.md](PREFLIGHT.md).
 
 ### Runaway protection
 
-Two layers, each covering the other's blind spot: `shutdown -h +420` armed as
-the first command in user-data, which assumes user-data got that far and the
-kernel is responsive; and an 8-hour CloudWatch alarm carrying the native
-`arn:aws:automate:<region>:ec2:terminate` action, armed by the launcher, which
-assumes nothing. The collector holds no `ec2` write permissions at all —
-terminating is AWS's job.
+Two layers, each covering the other's blind spot: the instance self-terminates
+after its run completes (or times out), which assumes it got there and the
+kernel is responsive; and a 1-hour CloudWatch alarm carrying the native
+`arn:aws:automate:<region>:ec2:terminate` action, armed by the launcher,
+which assumes nothing. A run that wedges is terminated by the alarm. The
+collector holds no `ec2` write permissions at all - terminating is AWS's job.
