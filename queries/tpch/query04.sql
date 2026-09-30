@@ -4,8 +4,8 @@ select
 from
     testdata.tpch.orders as o
 where
-    o_orderdate >= '1996-05-01'::DATE
-    and o_orderdate < '1996-08-01'::DATE
+    o_orderdate >= '@DATE@'::DATE
+    and o_orderdate < '@DATE@'::DATE + interval '3' month
     and exists (
         select
             *

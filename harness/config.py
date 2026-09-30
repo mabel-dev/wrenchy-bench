@@ -37,12 +37,20 @@ S3_RESULTS_PREFIX = "s3://opteryx-bench-results"
 GCS_BUCKET = "opteryx_data"
 GCS_PREFIX = f"gs://{GCS_BUCKET}/benchmarks"
 
-# The same corpora as v2026-08, rebuilt in skene format v2. skene reads a
-# ONE-HOP window — [kVersion-1, kVersion] — so v1 files stop being readable the
-# moment a kVersion=3 build ships, and could then only be rebuilt from parquet.
-# Reading these needs opteryx-core 0.9.76 or later; earlier engines see v2 and
-# refuse it outright rather than misreading it.
-CORPUS_VERSION = "v2026-08-skene2"
+# The same datasets as v2026-08-skene2, rebuilt in skene format v3 (column-major,
+# 65,536-row row groups fetched in blocks of 4, files closed at 4 GiB) by
+# opteryx-core's dev/parquet_to_skene.py, 2026-09-25. hits_partitioned is the
+# same canonical parquet, copied across unchanged.
+#
+# skene reads a ONE-HOP window — [kVersion-1, kVersion], [2, 3] today — so these
+# need the first opteryx-core release after 0.9.139; 0.9.139 and earlier see v3
+# and refuse it outright rather than misreading it. The v2 corpora stay readable
+# by a v3 engine until a kVersion=4 build ships.
+#
+# ⛔ A trend break at this prefix is the DATA: new format AND 4x smaller row
+# groups (64k vs 262k rows) on every skene line, and `bytes_processed` for skene
+# changes meaning with it (see bench_runner.telemetry_columns).
+CORPUS_VERSION = "v2026-09-skene3"
 
 # Stock CPython, NOT the free-threaded build. Execution is native and already
 # runs with the GIL released, so 3.14t bought nothing; opteryx-core also stopped
@@ -83,12 +91,12 @@ CORPORA = {
     for c in (
         Corpus("tpch_1_skene", "testdata/tpch_1_skene", "lz4", 405_000_000, tables=8),
         Corpus("tpch_10_skene", "testdata/tpch_10_skene", "lz4", 4_000_000_000, tables=8),
-        Corpus("tpch_100_skene", "testdata/tpch_100_skene", "lz4", 40_000_000_000, tables=8),
-        Corpus("job_skene", "testdata/job_skene", "lz4", 2_100_000_000, tables=21),
+        Corpus("tpch_100_skene", "testdata/tpch_100_skene", "lz4", 41_500_000_000, tables=8),
+        Corpus("job_skene", "testdata/job_skene", "lz4", 2_000_000_000, tables=21),
         # medium (1e8 rows) only. `small` is 630MB, which sits entirely in page
         # cache on a 32GiB box and measures compute with storage removed — it
         # was the local default and is not carried into the suite.
-        Corpus("h2o_skene", "testdata/h2o_skene", "lz4", 8_700_000_000, tables=5),
+        Corpus("h2o_skene", "testdata/h2o_skene", "lz4", 8_900_000_000, tables=5),
         # ClickBench is a single wide table, so its files sit at the top level
         # rather than under per-table directories.
         #
@@ -102,7 +110,7 @@ CORPORA = {
         # which is the opposite of what this line is for: it exists to sit
         # beside DuckDB, ClickHouse and DataFusion on the same data.
         Corpus("hits_partitioned", "scratch/hits_partitioned", "zstd", 14_800_000_000, tables=0),
-        Corpus("hits_skene", "scratch/hits_skene", "lz4", 15_300_000_000, tables=0),
+        Corpus("hits_skene", "scratch/hits_skene", "lz4", 12_400_000_000, tables=0),
     )
 }
 

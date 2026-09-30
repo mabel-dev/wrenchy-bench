@@ -24,8 +24,8 @@ from
             and s_nationkey = n1.n_nationkey
             and c_nationkey = n2.n_nationkey
             and (
-                (n1.n_name = 'KENYA' and n2.n_name = 'PERU')
-                or (n1.n_name = 'PERU' and n2.n_name = 'KENYA')
+                (n1.n_name = '@NATION1@' and n2.n_name = '@NATION2@')
+                or (n1.n_name = '@NATION2@' and n2.n_name = '@NATION1@')
             )
             and l_shipdate between '1995-01-01'::DATE and '1996-12-31'::DATE
     ) as shipping

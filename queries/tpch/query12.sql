@@ -17,11 +17,11 @@ from
     testdata.tpch.lineitem
 where
     o_orderkey = l_orderkey
-    and l_shipmode in ('REG AIR', 'MAIL')
+    and l_shipmode in ('@SHIPMODE1@', '@SHIPMODE2@')
     and l_commitdate < l_receiptdate
     and l_shipdate < l_commitdate
-    and l_receiptdate >= '1995-01-01'::DATE
-    and l_receiptdate < '1996-01-01'::DATE
+    and l_receiptdate >= '@DATE@'::DATE
+    and l_receiptdate < '@DATE@'::DATE + interval '1' year
 group by
     l_shipmode
 order by

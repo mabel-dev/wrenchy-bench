@@ -104,6 +104,33 @@ python harness/report.py --bundle /tmp/bundle --site-data site/data
 python harness/publish.py --bundle /tmp/bundle --dry-run
 ```
 
+## TPC-H validation and conformance
+
+`queries/tpch/*.sql` are templates over `@NAME@` parameters
+(`harness/tpch_params.py`): `BENCH` is what the suite runs, `VALIDATION` is the
+spec's Clause 2.4.x.4 set. To check the engine's answers at SF1 against the TPC
+answer set (needs `pip install duckdb`):
+
+```bash
+cd <dir containing testdata/>
+python harness/validate_tpch.py --relation testdata.tpch_1_skene
+```
+
+Known results and why (2026-09-28, local opteryx-core 0.9.143+3596: 21 PASS, 1 DATA):
+
+- **q06** used to FAIL on any wheel without opteryx-core commit `ebf96999`: the
+  constant folder computed `0.06 + 0.01` in floating point (0.06999999999999999),
+  so `l_discount between 0.06 - 0.01 and 0.06 + 0.01` dropped every 0.07 row
+  (75,207,768 vs 123,141,078). Fixed by folding decimal-point literal arithmetic
+  exactly. Weekly runs on older wheels timed a wrong-result Q6, so its history
+  before that release is not comparable.
+- **q13 DATA**: the corpora's free-text columns (every comment and address) do
+  not match DuckDB's dbgen; keys, numbers, dates and enums are identical.
+  Queries that only print a text column are compared with it masked.
+- **Deviations from the spec text** (both engine limits, see the query headers):
+  q13 (non-equality predicate in ON) and q15 (Appendix B Variant A does not run).
+  Q17's `CAST` and the `LIMIT`/`::DATE` syntax are permitted minor modifications.
+
 ## Setup
 
 ```bash

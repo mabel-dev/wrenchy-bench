@@ -1,26 +1,7 @@
 /*
-Opteryx syntax changes
-- view definitions changed to CTE
+TPC-H 2.4.2 functional query definition. Only the row limit (2.1.2.9) and the
+date-cast syntax (2.2.3.3) are dialect changes.
 */
-with q2_min_ps_supplycost as
-(select
-    p_partkey as min_p_partkey,
-    min(ps_supplycost) as min_ps_supplycost
-from
-    testdata.tpch.part,
-    testdata.tpch.partsupp,
-    testdata.tpch.supplier,
-    testdata.tpch.nation,
-    testdata.tpch.region
-where
-    p_partkey = ps_partkey
-    and s_suppkey = ps_suppkey
-    and s_nationkey = n_nationkey
-    and n_regionkey = r_regionkey
-    and r_name = 'EUROPE'
-group by
-    p_partkey)
-
 select
     s_acctbal,
     s_name,
@@ -35,18 +16,30 @@ from
     testdata.tpch.supplier,
     testdata.tpch.partsupp,
     testdata.tpch.nation,
-    testdata.tpch.region,
-    q2_min_ps_supplycost
+    testdata.tpch.region
 where
     p_partkey = ps_partkey
     and s_suppkey = ps_suppkey
-    and p_size = 37
-    and p_type like '%COPPER'
+    and p_size = @SIZE@
+    and p_type like '%@TYPE@'
     and s_nationkey = n_nationkey
     and n_regionkey = r_regionkey
-    and r_name = 'EUROPE'
-    and ps_supplycost = min_ps_supplycost
-    and p_partkey = min_p_partkey
+    and r_name = '@REGION@'
+    and ps_supplycost = (
+        select
+            min(ps_supplycost)
+        from
+            testdata.tpch.partsupp,
+            testdata.tpch.supplier,
+            testdata.tpch.nation,
+            testdata.tpch.region
+        where
+            p_partkey = ps_partkey
+            and s_suppkey = ps_suppkey
+            and s_nationkey = n_nationkey
+            and n_regionkey = r_regionkey
+            and r_name = '@REGION@'
+    )
 order by
     s_acctbal desc,
     n_name,

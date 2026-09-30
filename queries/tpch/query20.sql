@@ -17,7 +17,7 @@ where
                 from
                     testdata.tpch.part
                 where
-                    p_name like 'forest%'
+                    p_name like '@COLOR@%'
             )
             and ps_availqty > (
                 select
@@ -27,11 +27,11 @@ where
                 where
                     l_partkey = ps_partkey
                     and l_suppkey = ps_suppkey
-                    and l_shipdate >= '1994-01-01'::DATE
-                    and l_shipdate < '1995-01-01'::DATE
+                    and l_shipdate >= '@DATE@'::DATE
+                    and l_shipdate < '@DATE@'::DATE + interval '1' year
             )
     )
     and s_nationkey = n_nationkey
-    and n_name = 'CANADA'
+    and n_name = '@NATION@'
 order by
     s_name;

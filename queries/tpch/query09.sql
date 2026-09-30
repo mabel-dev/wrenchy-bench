@@ -22,7 +22,7 @@ from
             and p_partkey = l_partkey
             and o_orderkey = l_orderkey
             and s_nationkey = n_nationkey
-            and p_name like '%plum%'
+            and p_name like '%@COLOR@%'
     ) as profit
 group by
     nation,

@@ -5,8 +5,8 @@ from
     testdata.tpch.part
 where
     p_partkey = l_partkey
-    and p_brand = 'Brand#23'
-    and p_container = 'MED BOX'
+    and p_brand = '@BRAND@'
+    and p_container = '@CONTAINER@'
     and l_quantity < (
         select
             0.2 * avg(l_quantity)

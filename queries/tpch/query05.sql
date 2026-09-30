@@ -15,9 +15,9 @@ where
     and c_nationkey = s_nationkey
     and s_nationkey = n_nationkey
     and n_regionkey = r_regionkey
-    and r_name = 'AFRICA'
-    and o_orderdate >= '1993-01-01'::DATE
-    and o_orderdate < '1994-01-01'::DATE
+    and r_name = '@REGION@'
+    and o_orderdate >= '@DATE@'::DATE
+    and o_orderdate < '@DATE@'::DATE + interval '1' year
 group by
     n_name
 order by

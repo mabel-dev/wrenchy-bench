@@ -12,6 +12,6 @@ select
 from
     testdata.tpch.lineitem
 where
-    l_shipdate <= '1998-09-16'::DATE
+    l_shipdate <= '1998-12-01'::DATE - interval '@DELTA@' day
 group by l_returnflag, l_linestatus
 order by l_returnflag, l_linestatus;

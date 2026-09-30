@@ -1,6 +1,12 @@
 /*
-Opteryx syntax changes
-- view definitions changed to CTE
+DEVIATION FROM THE SPEC TEXT (TPC-H 2.4.15), forced by the engine.
+
+The spec creates a view and compares `total_revenue` to `(select max(...))`.
+Appendix B Variant A is the same with a common table expression. Opteryx cannot
+run Variant A: the scalar subquery over the CTE fails with "a probe-side join key
+the engine could not resolve here is not supported". The maximum is therefore
+computed in its own CTE and joined. Results are the same; the plan is not, so
+this is a non-conforming rewrite. Revisit when the engine runs Variant A.
 */
 with revenue_cached as
 (select
@@ -9,8 +15,8 @@ with revenue_cached as
 from
     testdata.tpch.lineitem
 where
-    l_shipdate >= '1996-01-01'::DATE
-    and l_shipdate < '1996-04-01'::DATE
+    l_shipdate >= '@DATE@'::DATE
+    and l_shipdate < '@DATE@'::DATE + interval '3' month
 group by l_suppkey)
 
 , max_revenue_cached as

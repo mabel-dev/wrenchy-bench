@@ -1,7 +1,7 @@
 select
     o_year,
     sum(case
-        when nation = 'PERU' then volume
+        when nation = '@NATION@' then volume
         else 0
     end) / sum(volume) as mkt_share
 from
@@ -26,10 +26,10 @@ from
             and o_custkey = c_custkey
             and c_nationkey = n1.n_nationkey
             and n1.n_regionkey = r_regionkey
-            and r_name = 'AMERICA'
+            and r_name = '@REGION@'
             and s_nationkey = n2.n_nationkey
             and o_orderdate between '1995-01-01'::DATE and '1996-12-31'::DATE
-            and p_type = 'ECONOMY BURNISHED NICKEL'
+            and p_type = '@TYPE@'
     ) as all_nations
 group by
     o_year

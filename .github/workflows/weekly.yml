@@ -41,7 +41,7 @@ env:
   # results bucket. Kept in step with harness/config.py's CORPUS_VERSION so it
   # cannot sit here naming a prefix that no longer exists; the v1 corpora it
   # used to point at were deleted once the v2 rebuild was proven by a run.
-  CORPUS_PREFIX: s3://opteryx-bench-corpora/v2026-08-skene2
+  CORPUS_PREFIX: s3://opteryx-bench-corpora/v2026-09-skene3
   RESULTS_BUCKET: s3://opteryx-bench-results
 
 jobs:

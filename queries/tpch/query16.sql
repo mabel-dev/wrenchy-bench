@@ -8,9 +8,9 @@ from
     testdata.tpch.part
 where
     p_partkey = ps_partkey
-    and p_brand <> 'Brand#34'
-    and p_type not like 'ECONOMY BRUSHED%'
-    and p_size in (22, 14, 27, 49, 21, 33, 35, 28)
+    and p_brand <> '@BRAND@'
+    and p_type not like '@TYPE@%'
+    and p_size in (@SIZE1@, @SIZE2@, @SIZE3@, @SIZE4@, @SIZE5@, @SIZE6@, @SIZE7@, @SIZE8@)
     and partsupp.ps_suppkey not in (
         select
             s_suppkey

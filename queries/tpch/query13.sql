@@ -1,39 +1,18 @@
 /*
-Canonical Q13 filters o_comment inside the LEFT OUTER JOIN's ON clause; Opteryx
-only supports equality predicates in a JOIN ON clause today, so the extra
-predicate can't go there directly. The previous rewrite moved it to WHERE
-instead, which is NOT equivalent: WHERE runs after the LEFT JOIN, so it drops
-every customer whose orders all fail the filter (or who have no orders at
-all) instead of counting them in the c_count=0 bucket, undercounting custdist
-(verified against the DuckDB oracle at SF0.01: 31 rows instead of the correct
-32, missing custdist=500 at c_count=0).
+DEVIATION FROM THE SPEC TEXT (TPC-H 2.4.13), forced by the engine.
 
-Fix: pre-filter orders in a derived table before the join. This reproduces
-the ON-clause semantics exactly (still an equality-only join) and matches
-canonical results.
+The functional definition puts `o_comment not like '%[WORD1]%[WORD2]%'` in the
+LEFT OUTER JOIN's ON clause. Opteryx only supports equality predicates in ON
+("Only JOINs with equals comparisons supported"), and moving the predicate to
+WHERE is NOT equivalent: it drops customers whose orders all fail the filter,
+and customers with no orders, instead of counting them at c_count = 0.
 
-CANONICAL:
+So the orders are filtered in a derived table first. That reproduces the ON
+semantics exactly and keeps the join an equality join. It is not Appendix B's
+Variant A (which uses a view), so this is a non-conforming rewrite. Revisit when
+the engine supports non-equality ON predicates.
 
-select
-    c_count,
-    count(*) as custdist
-from
-    (
-        select
-            c_custkey,
-            count(o_orderkey) as c_count
-        from
-            testdata.tpch.customer left outer join testdata.tpch.orders on
-                c_custkey = o_custkey
-                and o_comment not like '%unusual%accounts%'
-        group by
-            c_custkey
-    ) c_orders
-group by
-    c_count
-order by
-    custdist desc,
-    c_count desc;
+WORD1 / WORD2: validation uses special / requests (2.4.13.4).
 */
 
 SELECT
@@ -52,7 +31,7 @@ FROM
         FROM
           testdata.tpch.orders
         WHERE
-          o_comment NOT LIKE '%unusual%accounts%'
+          o_comment NOT LIKE '%@WORD1@%@WORD2@%'
       ) AS t ON c_custkey = t.o_custkey
     GROUP BY
       c_custkey

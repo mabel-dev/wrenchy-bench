@@ -32,6 +32,7 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
 
+from harness import tpch_params  # noqa: E402
 from harness.config import SUITE_BY_ID  # noqa: E402
 from harness.probe import Probe  # noqa: E402
 
@@ -83,8 +84,13 @@ def _read(path: str) -> str:
         return handle.read().strip()
 
 
-def load_queries(line) -> list[tuple[str, str]]:
-    """[(name, sql)] in canonical order, with table names bound to the dataset."""
+def load_queries(line, params: str = "bench") -> list[tuple[str, str]]:
+    """[(name, sql)] in canonical order, with table names bound to the dataset.
+
+    TPC-H files are templates; `params` picks the substitution set from
+    harness/tpch_params.py ("bench" is what the suite runs, "validation" is the
+    spec's Clause 2.4.x.4 set).
+    """
     benchmark = line.benchmark
     directory = os.path.join(QUERY_ROOT, benchmark)
     dataset = line.relation
@@ -99,6 +105,7 @@ def load_queries(line) -> list[tuple[str, str]]:
             # The vendored files carry the upstream placeholder prefixes.
             sql = sql.replace("testdata.tpch_tiny.", f"{dataset}.")
             sql = sql.replace("testdata.tpch.", f"{dataset}.")
+            sql = tpch_params.fill(sql, number, params, line.scale_factor)
             queries.append((f"q{number:02d}", sql))
         return queries
 
@@ -207,11 +214,14 @@ def telemetry_columns(readings: dict) -> dict:
 
       * parquet → `io_bytes_fetched`, COMPRESSED bytes off storage, counted by
         the rugo IO pipeline at the point of transfer.
-      * skene   → `io_bytes_claimed`, the on-disk extent of the row groups the
-        claim builder claimed. Skene mmaps whole files, so there is no transfer
-        point to count and no equivalent of the above; this is what a ranged
-        reader would fetch. It tracks row-group pruning and is BLIND to
-        projection (whole row groups, every column).
+      * skene   → `io_bytes_claimed`. From skene format v3 (corpus
+        v2026-09-skene3) it is the PLANNED CHUNK BYTES of the claimed row
+        groups for the columns the scan reads — it tracks row-group pruning AND
+        projection. The engine's actual positional reads are counted separately
+        (`io_skene_bytes_fetched`, which adds file-open and directory reads).
+        Before v3 it was the whole-row-group extent, BLIND to projection, so
+        the skene series breaks at that corpus version; a v3 engine reading v2
+        files reports no `io_bytes_claimed` at all (NULL here, not 0).
 
     They are near neighbours, not the same quantity, so a series is only
     comparable against ITS OWN history — never parquet against skene.
@@ -307,6 +317,25 @@ def run_one(opteryx, sql: str, timeout_s: float) -> dict:
     }
     record.update(probe.reading.as_dict(), cpu_efficiency=probe.cpu_efficiency)
     return record
+
+
+def reject_empty_result(line, result: dict) -> dict:
+    """Turn a zero-row TPC-H result into an error record.
+
+    Every TPC-H query returns rows at every scale factor, so an empty result
+    means the query is wrong for this line, not fast. Q11's hardcoded 0.0001
+    (the spec's 0.0001 / SF) returned nothing at SF10 and SF100 and was
+    reported as a healthy timing. Recorded as an error and, like a death,
+    left in the results rather than dropped. Other benchmarks are exempt:
+    ClickBench filters can legitimately match nothing.
+    """
+    if line.benchmark != "tpch" or result["status"] != "ok" or result["row_count"] != 0:
+        return result
+    return {
+        **result,
+        "status": "error",
+        "error": f"returned 0 rows; every TPC-H query returns rows at SF{line.scale_factor}",
+    }
 
 
 def probe_elapsed(probe: Probe) -> float:
@@ -460,7 +489,7 @@ def main() -> int:
     with open(args.out, "w") as sink:
         for ordinal, (name, sql) in enumerate(queries, start=1):
             for iteration in range(1, line.iterations + 1):
-                result = run_one(opteryx, sql, line.timeout_s)
+                result = reject_empty_result(line, run_one(opteryx, sql, line.timeout_s))
                 record = dict(base)
                 record.update(
                     query=name,
@@ -478,6 +507,9 @@ def main() -> int:
                 if result["status"] == "timeout":
                     # Repeating a timeout buys no information and costs the
                     # full timeout again.
+                    break
+                if result["status"] == "error":
+                    # Same for an empty result: the next iteration is identical.
                     break
 
             print(

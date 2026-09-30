@@ -5,7 +5,7 @@
 #
 #   ENGINE_VERSION  opteryx-core version to install and measure ("latest" or a pin)
 #   HARNESS_REF     git ref of this repo
-#   CORPUS_PREFIX   s3://opteryx-bench-corpora/v2026-08
+#   CORPUS_PREFIX   s3://opteryx-bench-corpora/v2026-09-skene3
 #   RESULTS_BUCKET  s3://…
 #   RUN_ID          the run identifier the launcher is waiting on
 #

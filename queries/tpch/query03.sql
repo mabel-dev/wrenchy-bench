@@ -8,11 +8,11 @@ from
     testdata.tpch.orders,
     testdata.tpch.lineitem
 where
-    c_mktsegment = 'BUILDING'
+    c_mktsegment = '@SEGMENT@'
     and c_custkey = o_custkey
     and l_orderkey = o_orderkey
-    and o_orderdate < '1995-03-22'::DATE
-    and l_shipdate > '1995-03-22'::DATE
+    and o_orderdate < '@DATE@'::DATE
+    and l_shipdate > '@DATE@'::DATE
 group by
     l_orderkey,
     o_orderdate,

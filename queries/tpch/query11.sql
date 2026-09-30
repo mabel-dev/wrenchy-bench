@@ -1,12 +1,10 @@
 /*
-Opteryx syntax changes
-- view definitions changed to CTE
+TPC-H 2.4.11 functional query definition. FRACTION is 0.0001 / SF, filled in
+by harness/tpch_params.py from the line's scale factor.
 */
-
-with q11_part_tmp_cached as
-(select
+select
     ps_partkey,
-    sum(ps_supplycost * ps_availqty) as part_value
+    sum(ps_supplycost * ps_availqty) as value
 from
     testdata.tpch.partsupp,
     testdata.tpch.supplier,
@@ -14,26 +12,20 @@ from
 where
     ps_suppkey = s_suppkey
     and s_nationkey = n_nationkey
-    and n_name = 'GERMANY'
-group by ps_partkey)
-
-, q11_sum_tmp_cached as
-(select
-    sum(part_value) as total_value
-from
-    q11_part_tmp_cached)
-
-select
-    ps_partkey, part_value as value
-from (
-    select
-        ps_partkey,
-        part_value,
-        total_value
-    from
-        q11_part_tmp_cached join q11_sum_tmp_cached
-) a
-where
-    part_value > total_value * 0.0001
+    and n_name = '@NATION@'
+group by
+    ps_partkey having
+        sum(ps_supplycost * ps_availqty) > (
+            select
+                sum(ps_supplycost * ps_availqty) * @FRACTION@
+            from
+                testdata.tpch.partsupp,
+                testdata.tpch.supplier,
+                testdata.tpch.nation
+            where
+                ps_suppkey = s_suppkey
+                and s_nationkey = n_nationkey
+                and n_name = '@NATION@'
+        )
 order by
     value desc;

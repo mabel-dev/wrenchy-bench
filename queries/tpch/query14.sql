@@ -9,5 +9,5 @@ from
     testdata.tpch.part
 where
     l_partkey = p_partkey
-    and l_shipdate >= '1995-08-01'::DATE
-    and l_shipdate < '1995-09-01'::DATE;
+    and l_shipdate >= '@DATE@'::DATE
+    and l_shipdate < '@DATE@'::DATE + interval '1' month;

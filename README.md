@@ -10,11 +10,11 @@ on a [GitHub Pages site](https://mabel-dev.github.io/wrenchy-bench/).
 |---|---|---|--:|--:|--:|
 | TPC-H SF1 | Skene · lz4 | `tpch_1_skene` | 22 | 5 | 0.3 GB |
 | TPC-H SF10 | Skene · lz4 | `tpch_10_skene` | 22 | 5 | 4.0 GB |
-| TPC-H SF100 | Skene · lz4 | `tpch_100_skene` | 22 | 3 | 40 GB |
-| JOB | Skene · lz4 | `job_skene` | 113 | 3 | 2.5 GB |
-| H2O (medium) | Skene · lz4 | `h2o_skene` | 15 | 3 | 7.0 GB |
+| TPC-H SF100 | Skene · lz4 | `tpch_100_skene` | 22 | 3 | 41.5 GB |
+| JOB | Skene · lz4 | `job_skene` | 113 | 3 | 2.0 GB |
+| H2O (medium) | Skene · lz4 | `h2o_skene` | 15 | 3 | 8.9 GB |
 | ClickBench partitioned | Parquet · zstd | `hits_partitioned` | 43 | 5 | 14.8 GB |
-| ClickBench | Skene · lz4 | `hits_skene` | 43 | 5 | 14 GB |
+| ClickBench | Skene · lz4 | `hits_skene` | 43 | 5 | 12.4 GB |
 
 280 queries, ≈ 4 hours, ≈ $3 a run. Stock CPython 3.14 — execution is native
 and already runs with the GIL released, so the free-threaded build bought
