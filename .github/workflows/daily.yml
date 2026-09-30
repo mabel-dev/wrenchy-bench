@@ -72,6 +72,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh workflow run collect.yml --ref main \
+          gh workflow run collect.yml --repo mabel-dev/wrenchy-bench --ref main \
             -f run_id='${{ steps.launch.outputs.run_id }}'
           echo "collector dispatched for ${{ steps.launch.outputs.run_id }}"
