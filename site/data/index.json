@@ -1,5 +1,92 @@
 [
  {
+  "run_id": "2026-10-04T14:38Z",
+  "run_date": "2026-10-04T14:41:57.390150+00:00",
+  "status": "ok",
+  "engine_version": "0.9.155",
+  "engine_build": 3636,
+  "host": {
+   "availability_zone": "us-east-1a",
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4 (Neoverse-V2)",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": 33013035008,
+   "memory_gib": 32
+  },
+  "totals": {
+   "clickbench_parquet": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 43,
+    "peak_rss_bytes": 11950706688,
+    "queries": 43,
+    "sum_min_ms": 15409.302599999999,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "clickbench_skene": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 43,
+    "peak_rss_bytes": 12615913472,
+    "queries": 43,
+    "sum_min_ms": 10886.443098,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "h2o_skene": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 15,
+    "peak_rss_bytes": 20654141440,
+    "queries": 15,
+    "sum_min_ms": 25399.9016,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "job_skene": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 113,
+    "peak_rss_bytes": 6995501056,
+    "queries": 113,
+    "sum_min_ms": 16299.333102,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "tpch_sf100_skene": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 22,
+    "peak_rss_bytes": 24405086208,
+    "queries": 22,
+    "sum_min_ms": 48086.248788,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "tpch_sf10_skene": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 22,
+    "peak_rss_bytes": 2684383232,
+    "queries": 22,
+    "sum_min_ms": 4686.879203,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "tpch_sf1_skene": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 22,
+    "peak_rss_bytes": 767209472,
+    "queries": 22,
+    "sum_min_ms": 925.736946,
+    "timeout": 0,
+    "unstable": 0
+   }
+  }
+ },
+ {
   "run_id": "2026-10-03T14:08Z",
   "run_date": "2026-10-03T14:12:16.771445+00:00",
   "status": "ok",
