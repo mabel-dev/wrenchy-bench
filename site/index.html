@@ -89,6 +89,14 @@
   .centre { stroke:var(--muted); stroke-width:1.25; }
   .limit  { stroke:var(--muted); stroke-width:1.25; stroke-dasharray:4 3; opacity:0.8; }
   .phase  { stroke:var(--rule-firm); stroke-width:1; stroke-dasharray:2 3; }
+  .event-line { stroke:var(--signal); stroke-width:1; opacity:0.7; }
+  .event-badge { fill:var(--signal); }
+  .event-num { font-family:var(--sans); font-size:10.5px; font-weight:600; fill:var(--surface); }
+  .events { font-family:var(--sans); font-size:12.5px; color:var(--ink-soft); padding:0 18px 16px; }
+  .events summary { cursor:pointer; color:var(--ink); }
+  .events ol { list-style:none; margin:8px 0 0; padding:0; display:grid; gap:6px; }
+  .event-key { display:inline-grid; place-items:center; width:18px; height:18px; margin-right:8px;
+               border-radius:50%; background:var(--signal); color:var(--surface); font-size:10.5px; font-weight:600; }
   .legend { font-family:var(--sans); font-size:12px; color:var(--ink-soft);
             display:flex; gap:22px; padding:6px 18px 16px; flex-wrap:wrap; justify-content:center; }
   .legend span { display:inline-flex; align-items:center; gap:7px; }
@@ -97,7 +105,7 @@
   .legend i.centre { border-top:2px solid var(--muted); }
   .legend i.dot { width:8px; height:8px; border:0; border-radius:50%; }
   .legend i.dot.alarm { background:var(--alarm); }
-  .legend i.dot.signal { background:var(--signal); border-radius:0; transform:rotate(45deg); }
+  .legend i.dot.signal { background:var(--frame); border-radius:0; transform:rotate(45deg); }
   /* The tooltip is fixed-positioned and pointer-events:none so it can never sit
      between the cursor and the next hit target it is describing. */
   #tip { position:fixed; z-index:10; pointer-events:none; opacity:0; transition:opacity .08s;
@@ -231,35 +239,36 @@ const suiteTotal = run =>
 //   - a run outside the limits is a SIGNAL ("outside"), marked, no restart;
 //   - RUN consecutive runs on one side of the centre CONFIRM a shift: a new
 //     phase starts at the first run of that streak and its limits are re-derived;
-//   - a known break (different instance type, or an entry in KNOWN_BREAKS)
-//     starts a new phase outright.
-// Engine releases are NOT breaks: almost every run is a new version, and a
-// faster engine is exactly the shift this exists to detect.
+// ONLY the data starts a phase. Nothing known about a run — a new release, new
+// corpora, a different instance — is allowed to: if it changed the system, the
+// tests above will say so; if they don't, it didn't. Known events are drawn as
+// ANNOTATIONS (EVENTS below) so a detected shift can be read against them, but
+// they never move a limit.
 const CONTROL_BASE = 8;
 const CONTROL_RUN = 8;
 const XMR_K = 2.66;
 
-// Data changes the runs cannot see for themselves (index.json carries no
-// corpus hash). A phase starts at the first run at or after `from`.
-const KNOWN_BREAKS = [
-  { from: "2026-10-08T17:00Z", reason: "corpora v2026-08-skene2 → v2026-09-skene3" },
+// Things known to have changed around a run, for annotation only (index.json
+// carries no corpus hash). Marked at the first run at or after `from`.
+const EVENTS = [
+  { from: "2026-10-08T17:00Z", text: "corpora v2026-08-skene2 → v2026-09-skene3" },
 ];
 
-function forcedBreaks(history) {
-  const reasons = new Map();
+function events(history) {
+  const notes = new Map();
   history.forEach((run, i) => {
     if (i === 0) return;
     const was = history[i - 1].host?.instance_type, now = run.host?.instance_type;
-    if (was && now && was !== now) reasons.set(i, `instance ${was} → ${now}`);
+    if (was && now && was !== now) notes.set(i, `instance ${was} → ${now}`);
   });
-  for (const brk of KNOWN_BREAKS) {
-    const i = history.findIndex(run => run.run_id >= brk.from);
-    if (i > 0) reasons.set(i, brk.reason);
+  for (const ev of EVENTS) {
+    const i = history.findIndex(run => run.run_id >= ev.from);
+    if (i > 0) notes.set(i, ev.text);
   }
-  return reasons;
+  return notes;
 }
 
-function controlPhases(values, forced) {
+function controlPhases(values) {
   const mean = xs => xs.reduce((a, b) => a + b, 0) / xs.length;
   const limitsFrom = s => {
     const xs = values.slice(s, s + CONTROL_BASE);
@@ -273,10 +282,6 @@ function controlPhases(values, forced) {
   const marks = new Map();
   let start = 0, why = "first run", lim = null;
   for (let i = 0; i < values.length; i++) {
-    if (i > start && forced.has(i)) {
-      phases.push({ s: start, e: i - 1, lim, why });
-      start = i; why = forced.get(i); lim = null;
-    }
     if (lim == null && i - start + 1 >= CONTROL_BASE) lim = limitsFrom(start);
     if (lim == null || i < start + CONTROL_BASE || values[i] == null) continue;
     if (values[i] < lim.lo || values[i] > lim.hi) marks.set(i, { kind: "outside", lim });
@@ -308,7 +313,8 @@ function controlPhases(values, forced) {
 function suiteChart(history, w = 1100, h = 300) {
   const values = history.map(suiteTotal);
   if (values.length < 2) return `<p class="empty">Not enough runs yet.</p>`;
-  const { phases, marks } = controlPhases(values, forcedBreaks(history));
+  const { phases, marks } = controlPhases(values);
+  const notes = events(history);
   const phaseOf = i => phases.find(p => i >= p.s && i <= p.e);
   const meta = history.map(run => ({
     run_id: run.run_id,
@@ -317,7 +323,7 @@ function suiteChart(history, w = 1100, h = 300) {
   const bounds = [...values, ...phases.flatMap(p => p.lim ? [p.lim.lo, p.lim.hi] : [])];
   const lo = Math.min(...bounds), hi = Math.max(...bounds);
   const span = (hi - lo) || 1;
-  const padL = 64, padR = 14, padT = 26, padB = 12;
+  const padL = 64, padR = 14, padT = 40, padB = 12;
   const step = (w - padL - padR) / (values.length - 1);
   const x = i => padL + i * step;
   const y = v => h - padB - ((v - lo) / span) * (h - padT - padB);
@@ -332,11 +338,30 @@ function suiteChart(history, w = 1100, h = 300) {
         x2="${x1.toFixed(1)}" y2="${y(v).toFixed(1)}"/>`;
     const label = p.lim ? `centre ${fmt.secs(p.lim.c)}`
       : `setting limits (${p.e - p.s + 1}/${CONTROL_BASE} runs)`;
-    return `${n > 0 ? `<line class="phase" x1="${x0.toFixed(1)}" y1="${padT - 18}"
+    // Near the right edge a narrow phase's label is anchored to the edge
+    // instead of running off the chart.
+    const right = x0 > w * 0.6;
+    return `${n > 0 ? `<line class="phase" x1="${x0.toFixed(1)}" y1="${padT - 34}"
           x2="${x0.toFixed(1)}" y2="${h - padB}"/>` : ""}
       ${p.lim ? hline(p.lim.c, "centre") + hline(p.lim.lo, "limit") + hline(p.lim.hi, "limit") : ""}
-      <text x="${(x0 + 6).toFixed(1)}" y="${padT - 10}" class="axis-label">${esc(label)}</text>`;
+      ${right && x1 - x0 < 180
+        ? `<text x="${(x0 - 6).toFixed(1)}" y="${padT - 24}" class="axis-label" text-anchor="end">${esc(label)}</text>`
+        : `<text x="${(x0 + 6).toFixed(1)}" y="${padT - 24}" class="axis-label">${esc(label)}</text>`}`;
   }).join("");
+
+  // Annotations: a known event at a run, drawn as a numbered marker at the run
+  // itself (never a phase boundary); what happened is in the Events expander
+  // under the chart, keyed by the same number. Context only.
+  const eventList = [...notes].sort((a, b) => a[0] - b[0]);
+  const eventMarks = eventList.map(([i], n) => {
+    const ex = x(i).toFixed(1);
+    return `<line class="event-line" x1="${ex}" y1="${padT - 4}" x2="${ex}" y2="${h - padB}"/>
+      <circle cx="${ex}" cy="${padT - 12}" r="8" class="event-badge"/>
+      <text x="${ex}" y="${padT - 12}" class="event-num" text-anchor="middle"
+            dominant-baseline="central">${n + 1}</text>`;
+  }).join("");
+  const eventRows = eventList.map(([i, text], n) =>
+    `<li><span class="event-key">${n + 1}</span>${esc(history[i].run_id)} — ${esc(text)}</li>`).join("");
 
   const dots = values.map((v, i) => {
     const cx = x(i).toFixed(1), cy = y(v).toFixed(1);
@@ -344,13 +369,14 @@ function suiteChart(history, w = 1100, h = 300) {
       return `<circle cx="${cx}" cy="${cy}" r="5" fill="var(--alarm)"/>`;
     if (marks.get(i)?.kind === "confirmed")
       return `<rect x="${(x(i) - 4.5).toFixed(1)}" y="${(y(v) - 4.5).toFixed(1)}" width="9" height="9"
-          fill="var(--signal)" transform="rotate(45 ${cx} ${cy})"/>`;
+          fill="var(--frame)" transform="rotate(45 ${cx} ${cy})"/>`;
     return `<circle cx="${cx}" cy="${cy}" r="3" fill="var(--accent)"/>`;
   }).join("");
   const targets = hits(values, meta, x, padL, w - padR, h, fmt.secs, (i, m) => {
     const p = phaseOf(i);
     const parts = [m.engine];
     if (i === p.s && p.why) parts.push(`phase starts: ${p.why}`);
+    if (notes.has(i)) parts.push(`event ${eventList.findIndex(e => e[0] === i) + 1}: ${notes.get(i)}`);
     parts.push(p.lim ? `limits ${fmt.secs(p.lim.lo)}–${fmt.secs(p.lim.hi)}` : "limits not set yet");
     const mark = marks.get(i);
     if (mark?.kind === "outside")
@@ -366,6 +392,7 @@ function suiteChart(history, w = 1100, h = 300) {
       ${[hi, lo].map(v => `<line class="grid" x1="${padL}" y1="${y(v).toFixed(1)}"
             x2="${w - padR}" y2="${y(v).toFixed(1)}"/>${axisLabel(v, y(v))}`).join("")}
       ${phaseMarks}
+      ${eventMarks}
       <polyline points="${points}" fill="none" stroke="var(--accent)" stroke-width="2"
                 stroke-linejoin="round" stroke-linecap="round"/>
       ${dots}
@@ -377,7 +404,9 @@ function suiteChart(history, w = 1100, h = 300) {
       <span><i class="dash"></i>Control limits</span>
       <span><i class="dot alarm"></i>Outside limits</span>
       <span><i class="dot signal"></i>Shift confirmed (${CONTROL_RUN} in a row)</span>
-    </div>`;
+    </div>
+    ${eventRows ? `<details class="events"><summary>Events (${eventList.length})</summary>
+      <ol>${eventRows}</ol></details>` : ""}`;
 }
 
 function render(index) {
