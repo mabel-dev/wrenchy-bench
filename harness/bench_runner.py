@@ -10,7 +10,7 @@ This repo runs its own driver rather than shelling out to opteryx-core's
 historical numbers were produced and should keep working unchanged; they are
 also four different drivers with four output shapes, three of which record no
 result column count and none of which record resource or engine telemetry.
-Owning the driver means one protocol across all seven lines, and every column
+Owning the driver means one protocol across all eight lines, and every column
 in `opteryx.benchmarks.telemetry` populated from the first run.
 
 Query sets are vendored under `queries/` — a benchmark repo owns its queries.

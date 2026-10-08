@@ -37,7 +37,15 @@ SOURCES = {
     "job_skene": "testdata/job",
     "h2o_skene": "testdata/h2o/medium",
     "hits_skene": "scratch/hits_partitioned",
+    "hits_rugo": "scratch/hits_partitioned",
 }
+
+# Corpora that are rugo-written PARQUET rather than skene: rewritten by
+# opteryx-core's dev/rewrite_parquet_layout.py at the writer defaults, which is
+# the same per-file rewrite the ClickBench "Opteryx (Parquet, rewritten)" load
+# step performs. The layout is spelled out so a change of writer default cannot
+# silently change the corpus.
+RUGO_PARQUET = {"hits_rugo"}
 
 
 def convert(checkout: str, corpus: str, force: bool) -> int:
@@ -56,6 +64,25 @@ def convert(checkout: str, corpus: str, force: bool) -> int:
         # tree is worse than none: it would pass an `isdir` check and silently
         # benchmark a fraction of the dataset.
         subprocess.run(["rm", "-rf", destination], check=True)
+
+    if corpus in RUGO_PARQUET:
+        print(f"  {corpus}: {SOURCES[corpus]} -> {CORPORA[corpus].dest} (rugo parquet, zstd, 65536 x 4)")
+        return subprocess.run(
+            [
+                sys.executable,
+                "dev/rewrite_parquet_layout.py",
+                SOURCES[corpus],
+                CORPORA[corpus].dest,
+                "--rows",
+                "65536",
+                "--block",
+                "4",
+                "--compression",
+                "zstd",
+            ],
+            cwd=checkout,
+            check=False,
+        ).returncode
 
     print(f"  {corpus}: {SOURCES[corpus]} -> {CORPORA[corpus].dest} (lz4)")
     return subprocess.run(

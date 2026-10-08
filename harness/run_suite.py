@@ -1,4 +1,4 @@
-"""Drive the seven lines and write the run bundle.
+"""Drive the eight lines and write the run bundle.
 
 Runs on the benchmark box. Each line is a separate `bench_runner.py` process —
 a fresh interpreter and a fresh allocator arena per line, so one line's

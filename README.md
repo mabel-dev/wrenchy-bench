@@ -2,7 +2,7 @@
 
 Daily performance baselining for [Opteryx](https://github.com/mabel-dev/opteryx-core).
 
-Seven workloads, one `c8g.4xlarge`, daily at 11:00 UTC. Corpora are built once
+Eight workloads, one `c8g.4xlarge`, daily at 11:00 UTC. Corpora are built once
 and stored, never regenerated. Results land in `opteryx.benchmarks.telemetry`
 and on a [GitHub Pages site](https://mabel-dev.github.io/wrenchy-bench/).
 
@@ -14,9 +14,15 @@ and on a [GitHub Pages site](https://mabel-dev.github.io/wrenchy-bench/).
 | JOB | Skene · lz4 | `job_skene` | 113 | 3 | 2.0 GB |
 | H2O (medium) | Skene · lz4 | `h2o_skene` | 15 | 3 | 8.9 GB |
 | ClickBench partitioned | Parquet · zstd | `hits_partitioned` | 43 | 5 | 14.8 GB |
+| ClickBench rewritten | Parquet (rugo) · zstd | `hits_rugo` | 43 | 5 | 8.8 GB |
 | ClickBench | Skene · lz4 | `hits_skene` | 43 | 5 | 12.4 GB |
 
-280 queries, ≈ 20 minutes per run. Stock CPython 3.14.
+323 queries, ≈ 22 minutes per run. Stock CPython 3.14.
+
+> **ClickBench rewritten** is the canonical files rewritten through rugo's own
+> writer at its defaults (zstd, 64k-row row groups, column-major blocks of 4) —
+> the data the ClickBench entry "Opteryx (Parquet, rewritten)" runs on. It sits
+> beside the canonical line, not in place of it.
 
 > **ClickBench parquet is the canonical upstream corpus** — the 100 objects
 > from `datasets.clickhouse.com/hits_compatible/athena_partitioned/` that every

@@ -107,6 +107,13 @@ resource "aws_iam_role_policy" "instance" {
         Effect   = "Allow"
         Action   = ["s3:PutObject", "s3:ListBucket"]
         Resource = [aws_s3_bucket.results.arn, "${aws_s3_bucket.results.arn}/*"]
+      },
+      {
+        # ONE-OFF: corpus/build_hits_rugo.py publishes hits_rugo from the box.
+        # Write-only, no delete, that one corpus only. Remove once published.
+        Effect   = "Allow"
+        Action   = ["s3:PutObject"]
+        Resource = "${aws_s3_bucket.corpora.arn}/${var.corpus_version}/hits_rugo/*"
       }
     ]
   })

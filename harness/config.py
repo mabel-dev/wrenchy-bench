@@ -1,4 +1,4 @@
-"""The suite definition: seven lines, their corpora, and how each is run.
+"""The suite definition: eight lines, their corpora, and how each is run.
 
 The single place the suite is described. The corpus publisher, the query
 driver, the run orchestrator and the reporter all read it, so a line cannot be
@@ -110,6 +110,13 @@ CORPORA = {
         # beside DuckDB, ClickHouse and DataFusion on the same data.
         Corpus("hits_partitioned", "scratch/hits_partitioned", "zstd", 14_800_000_000, tables=0),
         Corpus("hits_skene", "scratch/hits_skene", "lz4", 12_400_000_000, tables=0),
+        # The canonical files rewritten through rugo's own writer at its
+        # defaults (zstd, 65,536-row row groups, column-major blocks of 4), one
+        # output file per source file — the same data as the ClickBench entry
+        # "Opteryx (Parquet, rewritten)", whose load step does this rewrite.
+        # A line BESIDE hits_partitioned, not a replacement for it: the
+        # canonical line is the one comparable with everyone else's numbers.
+        Corpus("hits_rugo", "scratch/hits_rugo", "zstd", 8_800_000_000, tables=0),
     )
 }
 
@@ -210,6 +217,17 @@ SUITE: list[Line] = [
         data_format="parquet",
         corpus="hits_partitioned",
         relation="scratch.hits_partitioned",
+        iterations=5,
+        timeout_s=300,
+    ),
+    Line(
+        id="clickbench_rugo",
+        label="ClickBench · Parquet rewritten (rugo)",
+        benchmark="clickbench",
+        scale_factor=None,
+        data_format="parquet",
+        corpus="hits_rugo",
+        relation="scratch.hits_rugo",
         iterations=5,
         timeout_s=300,
     ),

@@ -178,6 +178,13 @@ sync_corpus tpch_100_skene "${DATA}/testdata/tpch_100_skene"
 sync_corpus job_skene      "${DATA}/testdata/job_skene"
 sync_corpus h2o_skene      "${DATA}/testdata/h2o_skene"
 sync_corpus hits_partitioned "${DATA}/scratch/hits_partitioned"
+# ONE-OFF: hits_rugo is built here once, then published. Remove the else.
+if aws s3 ls "${CORPUS_PREFIX}/hits_rugo/MANIFEST.json" >/dev/null 2>&1; then
+    sync_corpus hits_rugo  "${DATA}/scratch/hits_rugo"
+else
+    "${PYTHON}" "${WORK}/wrenchy-bench/corpus/build_hits_rugo.py" \
+        "${DATA}/scratch/hits_partitioned" "${DATA}/scratch/hits_rugo" "${CORPUS_PREFIX}"
+fi
 sync_corpus hits_skene     "${DATA}/scratch/hits_skene"
 
 # --- Run -------------------------------------------------------------------

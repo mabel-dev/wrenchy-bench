@@ -29,7 +29,7 @@ cat /tmp/launch.json
 queries/            193 vendored .sql files — a benchmark repo owns its queries
   tpch/ job/ h2o/ clickbench/
 harness/
-  config.py       the seven lines, their corpora, iterations and thresholds
+  config.py       the eight lines, their corpora, iterations and thresholds
   bench_runner.py the query driver: loads, binds, runs, measures. One per line
   run_suite.py    orchestrates the lines, writes the run bundle
   probe.py        peak RSS / CPU / block I/O — stdlib only
@@ -52,7 +52,7 @@ docs/PREFLIGHT.md what this still needs from opteryx-core
 historical numbers were produced and are left alone. They are also four
 drivers with four output shapes, three of which record no result column count
 and none of which record resource or engine telemetry. Owning the driver means
-one protocol across all seven lines and every column in the results table
+one protocol across all eight lines and every column in the results table
 populated from the first run.
 
 ## Corpora
