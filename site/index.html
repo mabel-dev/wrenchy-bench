@@ -13,7 +13,7 @@
     --ground:#F8FAFC; --surface:#FFF; --tint:#F1F7F6;
     --ink:#1C2656; --ink-soft:#475467; --muted:#667085;
     --rule:#E4E8EE; --rule-firm:#CDD4DE; --frame:#4A5590;
-    --accent:#177E78; --signal:#B7791F; --alarm:#B42318; --ok:#177E78; --record:#C85412;
+    --accent:#177E78; --signal:#B7791F; --alarm:#B42318; --ok:#177E78;
     --link:#D2601A;
     --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
     --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -25,7 +25,7 @@
       --ground:#0E1320; --surface:#151B2B; --tint:#17252A;
       --ink:#E3E8F5; --ink-soft:#B4BDCF; --muted:#8B95AA;
       --rule:#252E42; --rule-firm:#34405A; --frame:#7D88C4;
-      --accent:#4CC2B8; --signal:#E0A94F; --alarm:#F07A6E; --ok:#4CC2B8; --record:#F08A4B;
+      --accent:#4CC2B8; --signal:#E0A94F; --alarm:#F07A6E; --ok:#4CC2B8;
       --link:#F08A4B;
       --shadow: none;
     }
@@ -86,13 +86,18 @@
   .grid { stroke:var(--rule); stroke-width:1; }
   .hit { fill:transparent; }
   [data-tip] { cursor:crosshair; }
-  .avg { stroke:var(--muted); stroke-width:1.25; stroke-dasharray:4 3; fill:none; opacity:0.7; }
+  .centre { stroke:var(--muted); stroke-width:1.25; }
+  .limit  { stroke:var(--muted); stroke-width:1.25; stroke-dasharray:4 3; opacity:0.8; }
+  .phase  { stroke:var(--rule-firm); stroke-width:1; stroke-dasharray:2 3; }
   .legend { font-family:var(--sans); font-size:12px; color:var(--ink-soft);
             display:flex; gap:22px; padding:6px 18px 16px; flex-wrap:wrap; justify-content:center; }
   .legend span { display:inline-flex; align-items:center; gap:7px; }
   .legend i { display:inline-block; width:18px; height:0; border-top:2px solid var(--accent); }
   .legend i.dash { border-top:2px dashed var(--muted); }
-  .legend i.dot { width:8px; height:8px; border:0; border-radius:50%; background:var(--record); }
+  .legend i.centre { border-top:2px solid var(--muted); }
+  .legend i.dot { width:8px; height:8px; border:0; border-radius:50%; }
+  .legend i.dot.alarm { background:var(--alarm); }
+  .legend i.dot.signal { background:var(--signal); border-radius:0; transform:rotate(45deg); }
   /* The tooltip is fixed-positioned and pointer-events:none so it can never sit
      between the cursor and the next hit target it is describing. */
   #tip { position:fixed; z-index:10; pointer-events:none; opacity:0; transition:opacity .08s;
@@ -207,78 +212,160 @@ function spark(values, meta, w = 108, h = 26) {
   </svg>`;
 }
 
-// Trailing mean over `window` runs. Trailing rather than centred: a centred
-// mean would let a run's own value be pulled by runs that came after it, which
-// reads as the past changing every time a new run lands. Positions without a
-// full window are null so the line simply starts once there is enough history.
-function rolling(values, window) {
-  return values.map((_, i) => {
-    if (i < window - 1) return null;
-    const slice = values.slice(i - window + 1, i + 1);
-    if (slice.some(v => v == null)) return null;
-    return slice.reduce((a, b) => a + b, 0) / window;
+// The suite total is the ORIGINAL seven lines, fixed. A line added later
+// (ClickBench rewritten, TPC-DS, SSB, JSONBench, …) gets its own row in the
+// per-benchmark table but never enters the total — adding it would move every
+// later total by the new line's time and break the history at that run.
+const SUITE_TOTAL_LINES = [
+  "tpch_sf1_skene", "tpch_sf10_skene", "tpch_sf100_skene", "job_skene",
+  "h2o_skene", "clickbench_parquet", "clickbench_skene",
+];
+const suiteTotal = run =>
+  SUITE_TOTAL_LINES.reduce((sum, line) => sum + (run.totals[line]?.sum_min_ms || 0), 0);
+
+// --------------------------------------------------------------------------
+// Control chart (XmR / individuals). Runs are a PROCESS; its centre and limits
+// hold only while the process is unchanged, so they are worked out per PHASE:
+//   - a phase's limits come from its first BASE runs: centre = mean,
+//     limits = centre ± 2.66 × mean moving range;
+//   - a run outside the limits is a SIGNAL ("outside"), marked, no restart;
+//   - RUN consecutive runs on one side of the centre CONFIRM a shift: a new
+//     phase starts at the first run of that streak and its limits are re-derived;
+//   - a known break (different instance type, or an entry in KNOWN_BREAKS)
+//     starts a new phase outright.
+// Engine releases are NOT breaks: almost every run is a new version, and a
+// faster engine is exactly the shift this exists to detect.
+const CONTROL_BASE = 8;
+const CONTROL_RUN = 8;
+const XMR_K = 2.66;
+
+// Data changes the runs cannot see for themselves (index.json carries no
+// corpus hash). A phase starts at the first run at or after `from`.
+const KNOWN_BREAKS = [
+  { from: "2026-10-08T17:00Z", reason: "corpora v2026-08-skene2 → v2026-09-skene3" },
+];
+
+function forcedBreaks(history) {
+  const reasons = new Map();
+  history.forEach((run, i) => {
+    if (i === 0) return;
+    const was = history[i - 1].host?.instance_type, now = run.host?.instance_type;
+    if (was && now && was !== now) reasons.set(i, `instance ${was} → ${now}`);
   });
+  for (const brk of KNOWN_BREAKS) {
+    const i = history.findIndex(run => run.run_id >= brk.from);
+    if (i > 0) reasons.set(i, brk.reason);
+  }
+  return reasons;
 }
 
-// A wider trend line for the fastest-run total across every recorded run
-// (not just the last five shown in the table below it) — same hand-drawn
-// approach as spark(), with the scale's min/max labeled on the y-axis rather
-// than pinned to the chart's left/right edges, which would wrongly imply
-// "first run" and "last run" rather than "lowest value" and "highest value".
-// A trailing rolling mean is drawn over it: run-to-run noise on this suite is
-// a few percent, which is enough to hide the direction of travel in the raw
-// line.
-const AVG_WINDOW = 5;
+function controlPhases(values, forced) {
+  const mean = xs => xs.reduce((a, b) => a + b, 0) / xs.length;
+  const limitsFrom = s => {
+    const xs = values.slice(s, s + CONTROL_BASE);
+    if (xs.length < CONTROL_BASE || xs.some(v => v == null)) return null;
+    const c = mean(xs);
+    const mr = mean(xs.slice(1).map((v, k) => Math.abs(v - xs[k])));
+    return { c, lo: c - XMR_K * mr, hi: c + XMR_K * mr };
+  };
+  const phases = [];
+  // run index -> { kind: "outside" | "confirmed", lim: the limits it was tested against }
+  const marks = new Map();
+  let start = 0, why = "first run", lim = null;
+  for (let i = 0; i < values.length; i++) {
+    if (i > start && forced.has(i)) {
+      phases.push({ s: start, e: i - 1, lim, why });
+      start = i; why = forced.get(i); lim = null;
+    }
+    if (lim == null && i - start + 1 >= CONTROL_BASE) lim = limitsFrom(start);
+    if (lim == null || i < start + CONTROL_BASE || values[i] == null) continue;
+    if (values[i] < lim.lo || values[i] > lim.hi) marks.set(i, { kind: "outside", lim });
+    const first = i - CONTROL_RUN + 1;
+    if (first < start + CONTROL_BASE) continue;
+    const streak = values.slice(first, i + 1);
+    const below = streak.every(v => v != null && v < lim.c);
+    const above = streak.every(v => v != null && v > lim.c);
+    if (below || above) {
+      // The streak's runs ARE the new level: past the first "outside" (the day
+      // the shift was detected), its runs are not separate signals.
+      let seen = false;
+      for (let k = first; k <= i; k++) {
+        if (marks.get(k)?.kind !== "outside") continue;
+        if (seen) marks.delete(k);
+        seen = true;
+      }
+      marks.set(i, { kind: "confirmed", lim });
+      phases.push({ s: start, e: first - 1, lim, why });
+      start = first; lim = null;
+      why = `${CONTROL_RUN} in a row ${below ? "below" : "above"} ${fmt.secs(phases.at(-1).lim.c)}`;
+      i = first - 1;  // re-walk from the new phase's first run
+    }
+  }
+  phases.push({ s: start, e: values.length - 1, lim, why });
+  return { phases, marks };
+}
 
 function suiteChart(history, w = 1100, h = 300) {
-  const values = history.map(run =>
-    Object.values(run.totals).reduce((sum, t) => sum + (t.sum_min_ms || 0), 0));
+  const values = history.map(suiteTotal);
   if (values.length < 2) return `<p class="empty">Not enough runs yet.</p>`;
-  const means = rolling(values, AVG_WINDOW);
+  const { phases, marks } = controlPhases(values, forcedBreaks(history));
+  const phaseOf = i => phases.find(p => i >= p.s && i <= p.e);
   const meta = history.map(run => ({
     run_id: run.run_id,
     engine: `${run.engine_version}+${run.engine_build}`,
   }));
-  // The mean is bounded by the values it averages, so the raw series alone
-  // still fixes the scale.
-  const lo = Math.min(...values), hi = Math.max(...values);
+  const bounds = [...values, ...phases.flatMap(p => p.lim ? [p.lim.lo, p.lim.hi] : [])];
+  const lo = Math.min(...bounds), hi = Math.max(...bounds);
   const span = (hi - lo) || 1;
-  const padL = 64, padR = 14, padT = 10, padB = 12;
+  const padL = 64, padR = 14, padT = 26, padB = 12;
   const step = (w - padL - padR) / (values.length - 1);
   const x = i => padL + i * step;
   const y = v => h - padB - ((v - lo) / span) * (h - padT - padB);
   const points = values.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
-  const avgPoints = means.map((v, i) => v == null ? null : `${x(i).toFixed(1)},${y(v).toFixed(1)}`)
-    .filter(Boolean).join(" ");
-  // Runs that were an all-time best AT THE TIME. Marking every engine version
-  // change was the obvious way to tie speed to releases, but 27 of 28 run-to-run
-  // transitions in this history change version — a rule at each is a picket
-  // fence, not information. The record progression answers the same question
-  // ("which releases actually moved this?") and picks out a handful of runs.
-  const records = new Set();
-  values.reduce((best, v, i) => {
-    if (v != null && (best == null || v < best)) { records.add(i); return v; }
-    return best;
-  }, null);
 
-  const dots = values.map((v, i) => records.has(i)
-    ? `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="4.5" fill="var(--record)"/>`
-    : `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="3" fill="var(--accent)"/>`
-  ).join("");
+  // A phase's lines span from half a step before its first run to half a step
+  // after its last, so adjacent phases meet at the boundary between two runs.
+  const edge = i => Math.min(Math.max(x(i), padL), w - padR);
+  const phaseMarks = phases.map((p, n) => {
+    const x0 = edge(p.s - 0.5), x1 = edge(p.e + 0.5);
+    const hline = (v, cls) => `<line class="${cls}" x1="${x0.toFixed(1)}" y1="${y(v).toFixed(1)}"
+        x2="${x1.toFixed(1)}" y2="${y(v).toFixed(1)}"/>`;
+    const label = p.lim ? `centre ${fmt.secs(p.lim.c)}`
+      : `setting limits (${p.e - p.s + 1}/${CONTROL_BASE} runs)`;
+    return `${n > 0 ? `<line class="phase" x1="${x0.toFixed(1)}" y1="${padT - 18}"
+          x2="${x0.toFixed(1)}" y2="${h - padB}"/>` : ""}
+      ${p.lim ? hline(p.lim.c, "centre") + hline(p.lim.lo, "limit") + hline(p.lim.hi, "limit") : ""}
+      <text x="${(x0 + 6).toFixed(1)}" y="${padT - 10}" class="axis-label">${esc(label)}</text>`;
+  }).join("");
+
+  const dots = values.map((v, i) => {
+    const cx = x(i).toFixed(1), cy = y(v).toFixed(1);
+    if (marks.get(i)?.kind === "outside")
+      return `<circle cx="${cx}" cy="${cy}" r="5" fill="var(--alarm)"/>`;
+    if (marks.get(i)?.kind === "confirmed")
+      return `<rect x="${(x(i) - 4.5).toFixed(1)}" y="${(y(v) - 4.5).toFixed(1)}" width="9" height="9"
+          fill="var(--signal)" transform="rotate(45 ${cx} ${cy})"/>`;
+    return `<circle cx="${cx}" cy="${cy}" r="3" fill="var(--accent)"/>`;
+  }).join("");
   const targets = hits(values, meta, x, padL, w - padR, h, fmt.secs, (i, m) => {
+    const p = phaseOf(i);
     const parts = [m.engine];
-    if (means[i] != null) parts.push(`${AVG_WINDOW}-run avg ${fmt.secs(means[i])}`);
-    if (records.has(i)) parts.push("best so far");
+    if (i === p.s && p.why) parts.push(`phase starts: ${p.why}`);
+    parts.push(p.lim ? `limits ${fmt.secs(p.lim.lo)}–${fmt.secs(p.lim.hi)}` : "limits not set yet");
+    const mark = marks.get(i);
+    if (mark?.kind === "outside")
+      parts.push(`outside the limits then in force (${fmt.secs(mark.lim.lo)}–${fmt.secs(mark.lim.hi)})`);
+    if (mark?.kind === "confirmed") parts.push(`shift confirmed (${CONTROL_RUN} in a row)`);
     return parts.join(" · ");
   });
   const axisLabel = (v, yPos) => `<text x="${(padL - 8).toFixed(1)}" y="${yPos.toFixed(1)}"
       class="axis-label" text-anchor="end" dominant-baseline="middle">${fmt.secs(v)}</text>`;
   return `
     <svg class="chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"
-         role="img" aria-label="Fastest-run total, entire suite, across all recorded runs">
-      ${[hi, (hi + lo) / 2, lo].map(v => `<line class="grid" x1="${padL}" y1="${y(v).toFixed(1)}"
+         role="img" aria-label="Control chart of the suite total across all recorded runs, with limits per phase">
+      ${[hi, lo].map(v => `<line class="grid" x1="${padL}" y1="${y(v).toFixed(1)}"
             x2="${w - padR}" y2="${y(v).toFixed(1)}"/>${axisLabel(v, y(v))}`).join("")}
-      ${avgPoints ? `<polyline class="avg" points="${avgPoints}"/>` : ""}
+      ${phaseMarks}
       <polyline points="${points}" fill="none" stroke="var(--accent)" stroke-width="2"
                 stroke-linejoin="round" stroke-linecap="round"/>
       ${dots}
@@ -286,8 +373,10 @@ function suiteChart(history, w = 1100, h = 300) {
     </svg>
     <div class="legend">
       <span><i></i>Per-run total</span>
-      <span><i class="dash"></i>${AVG_WINDOW}-run rolling mean</span>
-      <span><i class="dot"></i>Best so far</span>
+      <span><i class="centre"></i>Phase centre</span>
+      <span><i class="dash"></i>Control limits</span>
+      <span><i class="dot alarm"></i>Outside limits</span>
+      <span><i class="dot signal"></i>Shift confirmed (${CONTROL_RUN} in a row)</span>
     </div>`;
 }
 
@@ -402,7 +491,7 @@ function render(index) {
   }).join("");
 
   const runRows = index.slice(0, 5).map(run => {
-    const suite = Object.values(run.totals).reduce((sum, t) => sum + (t.sum_min_ms || 0), 0);
+    const suite = suiteTotal(run);
     return `<tr>
       <td class="k">${run.run_id}</td>
       <td class="n"><span class="chip ${run.status}">${statusLabel(run.status)}</span></td>
@@ -422,7 +511,7 @@ function render(index) {
       </tr></thead>
       <tbody>${rows}</tbody>
     </table></div>
-    <h2>Entire suite over time</h2>
+    <h2>Entire suite over time (original seven benchmarks)</h2>
     <div class="scroller">${suiteChart(history)}</div>
     <h2>Last five runs</h2>
     <div class="scroller"><table>
