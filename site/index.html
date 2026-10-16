@@ -291,19 +291,33 @@ function controlPhases(values) {
     const below = streak.every(v => v != null && v < lim.c);
     const above = streak.every(v => v != null && v > lim.c);
     if (below || above) {
-      // The streak's runs ARE the new level: past the first "outside" (the day
-      // the shift was detected), its runs are not separate signals.
-      let seen = false;
+      // A streak only says the level moved somewhere inside it: its first runs
+      // can be ordinary noise on the near side of the old centre, with the
+      // real step later. Starting the phase at the streak's first run would
+      // then derive its limits from runs at two levels, giving a centre
+      // between them that no run sits near. So the step is placed where it
+      // best fits the streak — old centre before it, one new level from it on
+      // (least squares) — and the new phase starts there.
+      let at = first, best = Infinity;
       for (let k = first; k <= i; k++) {
+        const level = mean(values.slice(k, i + 1));
+        let sse = 0;
+        for (let j = first; j <= i; j++) sse += (values[j] - (j < k ? lim.c : level)) ** 2;
+        if (sse < best) { best = sse; at = k; }
+      }
+      // The runs from the step on ARE the new level: past the first "outside"
+      // (the day the shift was detected), they are not separate signals.
+      let seen = false;
+      for (let k = at; k <= i; k++) {
         if (marks.get(k)?.kind !== "outside") continue;
         if (seen) marks.delete(k);
         seen = true;
       }
       marks.set(i, { kind: "confirmed", lim });
-      phases.push({ s: start, e: first - 1, lim, why });
-      start = first; lim = null;
+      phases.push({ s: start, e: at - 1, lim, why });
+      start = at; lim = null;
       why = `${CONTROL_RUN} in a row ${below ? "below" : "above"} ${fmt.secs(phases.at(-1).lim.c)}`;
-      i = first - 1;  // re-walk from the new phase's first run
+      i = at - 1;  // re-walk from the new phase's first run
     }
   }
   phases.push({ s: start, e: values.length - 1, lim, why });
