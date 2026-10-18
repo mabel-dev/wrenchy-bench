@@ -86,6 +86,8 @@
   .grid { stroke:var(--rule); stroke-width:1; }
   .hit { fill:transparent; }
   [data-tip] { cursor:crosshair; }
+  .band  { fill:var(--accent); opacity:0.16; }
+  .level { fill:none; stroke:var(--frame); stroke-width:2.25; stroke-linejoin:round; stroke-linecap:round; }
   .centre { stroke:var(--muted); stroke-width:1.25; }
   .limit  { stroke:var(--muted); stroke-width:1.25; stroke-dasharray:4 3; opacity:0.8; }
   .phase  { stroke:var(--rule-firm); stroke-width:1; stroke-dasharray:2 3; }
@@ -104,6 +106,9 @@
   .legend i.dash { border-top:2px dashed var(--muted); }
   .legend i.centre { border-top:2px solid var(--muted); }
   .legend i.dot { width:8px; height:8px; border:0; border-radius:50%; }
+  .legend i.level { border-top:2px solid var(--frame); }
+  .legend i.band { height:10px; border:0; background:color-mix(in srgb, var(--accent) 24%, transparent); }
+  .legend i.dot.run { width:6px; height:6px; background:var(--accent); }
   .legend i.dot.alarm { background:var(--alarm); }
   .legend i.dot.signal { background:var(--frame); border-radius:0; transform:rotate(45deg); }
   /* The tooltip is fixed-positioned and pointer-events:none so it can never sit
@@ -232,6 +237,114 @@ const suiteTotal = run =>
   SUITE_TOTAL_LINES.reduce((sum, line) => sum + (run.totals[line]?.sum_min_ms || 0), 0);
 
 // --------------------------------------------------------------------------
+// Run chart: each run, a rolling median as the level, and a band for the
+// run-to-run noise around it. This is what the page draws while the engine is
+// being actively optimised: the total is MEANT to keep falling, so there is no
+// stable process for control limits to describe (see controlChart below).
+//   - the window is TRAILING, so the latest point's level uses only runs that
+//     have happened — it lags a real step by about half a window, but it never
+//     moves once drawn;
+//   - the band is median ± a robust σ (1.4826 × MAD), so one wild run widens
+//     it far less than a standard deviation would;
+//   - the first runs use a partial window, and nothing is drawn until it holds
+//     ROLL_MIN runs.
+const ROLL_WINDOW = 7;
+const ROLL_MIN = 3;
+
+function rolling(values) {
+  const median = xs => {
+    const s = [...xs].sort((a, b) => a - b), m = s.length >> 1;
+    return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+  };
+  return values.map((_, i) => {
+    const xs = values.slice(Math.max(0, i - ROLL_WINDOW + 1), i + 1).filter(v => v != null);
+    if (xs.length < ROLL_MIN) return null;
+    const m = median(xs);
+    const sigma = 1.4826 * median(xs.map(v => Math.abs(v - m)));
+    return { m, lo: m - sigma, hi: m + sigma, n: xs.length };
+  });
+}
+
+function suiteChart(history, w = 1100, h = 300) {
+  const values = history.map(suiteTotal);
+  if (values.length < 2) return `<p class="empty">Not enough runs yet.</p>`;
+  const roll = rolling(values);
+  const notes = events(history);
+  const meta = history.map(run => ({
+    run_id: run.run_id,
+    engine: `${run.engine_version}+${run.engine_build}`,
+  }));
+  const bounds = [...values, ...roll.flatMap(r => r ? [r.lo, r.hi] : [])];
+  const lo = Math.min(...bounds), hi = Math.max(...bounds);
+  const span = (hi - lo) || 1;
+  const padL = 64, padR = 14, padT = 40, padB = 12;
+  const step = (w - padL - padR) / (values.length - 1);
+  const x = i => padL + i * step;
+  const y = v => h - padB - ((v - lo) / span) * (h - padT - padB);
+  const pt = (i, v) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`;
+  const points = values.map((v, i) => pt(i, v)).join(" ");
+
+  const drawn = roll.flatMap((r, i) => r ? [i] : []);
+  const band = drawn.length < 2 ? "" : `<polygon class="band" points="${[
+    ...drawn.map(i => pt(i, roll[i].hi)),
+    ...drawn.slice().reverse().map(i => pt(i, roll[i].lo)),
+  ].join(" ")}"/>`;
+  const level = drawn.length < 2 ? "" : `<polyline class="level"
+      points="${drawn.map(i => pt(i, roll[i].m)).join(" ")}"/>`;
+
+  // Annotations: a known event at a run, drawn as a numbered marker at the run
+  // itself; what happened is in the Events expander under the chart, keyed by
+  // the same number. Context only.
+  const eventList = [...notes].sort((a, b) => a[0] - b[0]);
+  const eventMarks = eventList.map(([i], n) => {
+    const ex = x(i).toFixed(1);
+    return `<line class="event-line" x1="${ex}" y1="${padT - 4}" x2="${ex}" y2="${h - padB}"/>
+      <circle cx="${ex}" cy="${padT - 12}" r="8" class="event-badge"/>
+      <text x="${ex}" y="${padT - 12}" class="event-num" text-anchor="middle"
+            dominant-baseline="central">${n + 1}</text>`;
+  }).join("");
+  const eventRows = eventList.map(([i, text], n) =>
+    `<li><span class="event-key">${n + 1}</span>${esc(history[i].run_id)} — ${esc(text)}</li>`).join("");
+
+  const dots = values.map((v, i) =>
+    `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="3" fill="var(--accent)"/>`).join("");
+  const targets = hits(values, meta, x, padL, w - padR, h, fmt.secs, (i, m) => {
+    const parts = [m.engine];
+    if (notes.has(i)) parts.push(`event ${eventList.findIndex(e => e[0] === i) + 1}: ${notes.get(i)}`);
+    const r = roll[i];
+    parts.push(r ? `median (last ${r.n}) ${fmt.secs(r.m)} · noise ${fmt.secs(r.lo)}–${fmt.secs(r.hi)}`
+      : "too few runs for a median yet");
+    return parts.join(" · ");
+  });
+  const axisLabel = (v, yPos) => `<text x="${(padL - 8).toFixed(1)}" y="${yPos.toFixed(1)}"
+      class="axis-label" text-anchor="end" dominant-baseline="middle">${fmt.secs(v)}</text>`;
+  return `
+    <svg class="chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"
+         role="img" aria-label="Run chart of the suite total across all recorded runs, with a ${ROLL_WINDOW}-run rolling median and noise band">
+      ${[hi, lo].map(v => `<line class="grid" x1="${padL}" y1="${y(v).toFixed(1)}"
+            x2="${w - padR}" y2="${y(v).toFixed(1)}"/>${axisLabel(v, y(v))}`).join("")}
+      ${band}
+      ${eventMarks}
+      <polyline points="${points}" fill="none" stroke="var(--accent)" stroke-width="1"
+                stroke-linejoin="round" opacity="0.45"/>
+      ${level}
+      ${dots}
+      ${targets}
+    </svg>
+    <div class="legend">
+      <span><i class="dot run"></i>Per-run total</span>
+      <span><i class="level"></i>Median of last ${ROLL_WINDOW} runs</span>
+      <span><i class="band"></i>Typical noise (median ± robust σ)</span>
+    </div>
+    ${eventRows ? `<details class="events"><summary>Events (${eventList.length})</summary>
+      <ol>${eventRows}</ol></details>` : ""}`;
+}
+
+// --------------------------------------------------------------------------
+// NOT DRAWN while performance is still trending: kept for when it levels off,
+// at which point controlChart can replace suiteChart in render() — most likely
+// with its baseline taken from recent runs only.
+//
 // Control chart (XmR / individuals). Runs are a PROCESS; its centre and limits
 // hold only while the process is unchanged, so they are worked out per PHASE:
 //   - a phase's limits come from its first BASE runs: centre = mean,
@@ -324,7 +437,7 @@ function controlPhases(values) {
   return { phases, marks };
 }
 
-function suiteChart(history, w = 1100, h = 300) {
+function controlChart(history, w = 1100, h = 300) {
   const values = history.map(suiteTotal);
   if (values.length < 2) return `<p class="empty">Not enough runs yet.</p>`;
   const { phases, marks } = controlPhases(values);
