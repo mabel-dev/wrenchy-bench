@@ -1,5 +1,102 @@
 [
  {
+  "run_id": "2026-10-20T14:06Z",
+  "run_date": "2026-10-20T14:11:35.511050+00:00",
+  "status": "ok",
+  "engine_version": "0.9.172",
+  "engine_build": 3701,
+  "host": {
+   "availability_zone": "us-east-1a",
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4 (Neoverse-V2)",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": 33012969472,
+   "memory_gib": 32
+  },
+  "totals": {
+   "clickbench_parquet": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 43,
+    "peak_rss_bytes": 19663437824,
+    "queries": 43,
+    "sum_min_ms": 9638.610768,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "clickbench_rugo": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 43,
+    "peak_rss_bytes": 15456489472,
+    "queries": 43,
+    "sum_min_ms": 7585.904702,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "clickbench_skene": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 43,
+    "peak_rss_bytes": 13326532608,
+    "queries": 43,
+    "sum_min_ms": 10283.076541,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "h2o_skene": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 15,
+    "peak_rss_bytes": 20348293120,
+    "queries": 15,
+    "sum_min_ms": 15613.5179,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "job_skene": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 113,
+    "peak_rss_bytes": 6388973568,
+    "queries": 113,
+    "sum_min_ms": 9472.269436,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "tpch_sf100_skene": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 22,
+    "peak_rss_bytes": 13662638080,
+    "queries": 22,
+    "sum_min_ms": 42524.123173,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "tpch_sf10_skene": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 22,
+    "peak_rss_bytes": 2090123264,
+    "queries": 22,
+    "sum_min_ms": 4059.6417819999997,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "tpch_sf1_skene": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 22,
+    "peak_rss_bytes": 675090432,
+    "queries": 22,
+    "sum_min_ms": 696.842085,
+    "timeout": 0,
+    "unstable": 0
+   }
+  }
+ },
+ {
   "run_id": "2026-10-19T16:11Z",
   "run_date": "2026-10-19T16:16:40.608218+00:00",
   "status": "ok",
