@@ -2,7 +2,7 @@
 
 Daily performance baselining for [Opteryx](https://github.com/mabel-dev/opteryx-core).
 
-Eight workloads, one `c8g.4xlarge`, daily at 11:00 UTC. Corpora are built once
+Eight workloads, one `c8g.4xlarge`, daily. Corpora are built once
 and stored, never regenerated. Results land in `opteryx.benchmarks.telemetry`
 and on a [GitHub Pages site](https://mabel-dev.github.io/wrenchy-bench/).
 
