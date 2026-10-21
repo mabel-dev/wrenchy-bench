@@ -239,6 +239,16 @@ const SUITE_TOTAL_LINES = [
   "h2o_skene", "tpch_sf1", "tpch_sf10", "tpch_sf100", "job", "h2o",
   "clickbench_parquet", "clickbench_skene",
 ];
+// A line renamed when it moved from Skene to rugo parquet (2026-10-21) carries
+// the old id's history, so its trend, fastest and slowest run span the switch;
+// the EVENTS note marks where the format changed. A run holds only one of the
+// pair, so the new id is tried first.
+const PREDECESSOR = {
+  tpch_sf1: "tpch_sf1_skene", tpch_sf10: "tpch_sf10_skene",
+  tpch_sf100: "tpch_sf100_skene", job: "job_skene", h2o: "h2o_skene",
+};
+const lineTotal = (run, line) => run.totals[line] ?? run.totals[PREDECESSOR[line]];
+
 const suiteTotal = run =>
   SUITE_TOTAL_LINES.reduce((sum, line) => sum + (run.totals[line]?.sum_min_ms || 0), 0);
 
@@ -638,7 +648,7 @@ function render(index) {
 
   const rows = lines.map(line => {
     const total = latest.totals[line];
-    const series = history.map(run => run.totals[line]?.sum_min_ms ?? null);
+    const series = history.map(run => lineTotal(run, line)?.sum_min_ms ?? null);
     const bestAt = extreme(series, (v, b) => v < b);
     const worstAt = extreme(series, (v, b) => v > b);
     return `<tr>
@@ -648,7 +658,7 @@ function render(index) {
       ${record(series, worstAt)}
       <td class="n">${spark(series, runMeta)}</td>
       <td class="n">${total.queries}</td>
-      ${thisRun(history.map(run => run.totals[line]?.peak_rss_bytes ?? null),
+      ${thisRun(history.map(run => lineTotal(run, line)?.peak_rss_bytes ?? null),
                 fmt.gb, ["Lowest", "Highest"])}
     </tr>`;
   }).join("");
