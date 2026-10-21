@@ -20,7 +20,7 @@ from __future__ import annotations
 
 QUERY_COLUMNS: list[tuple[str, str]] = [
     ("run_id", "VARCHAR"),
-    # The suite line, e.g. tpch_sf100_skene. Carried explicitly rather than
+    # The suite line, e.g. tpch_sf100. Carried explicitly rather than
     # reconstructed from (benchmark, format, scale) downstream: the tuple is
     # not guaranteed unique if a second variant of a line is ever added.
     ("line", "VARCHAR"),

@@ -170,13 +170,13 @@ sync_corpus() {
     aws s3 sync --only-show-errors "${CORPUS_PREFIX}/${name}/" "${dest}/"
 }
 
-# All Skene except ClickBench-parquet, which IS the parquet line. JOB/H2O
-# ship rows upstream, not files, so the format was always ours to pick.
-sync_corpus tpch_1_skene   "${DATA}/testdata/tpch_1_skene"
-sync_corpus tpch_10_skene  "${DATA}/testdata/tpch_10_skene"
-sync_corpus tpch_100_skene "${DATA}/testdata/tpch_100_skene"
-sync_corpus job_skene      "${DATA}/testdata/job_skene"
-sync_corpus h2o_skene      "${DATA}/testdata/h2o_skene"
+# TPC-H, JOB and H2O stipulate no storage format, so they are rugo parquet.
+# ClickBench keeps all three of its formats.
+sync_corpus tpch_1_rugo    "${DATA}/scratch/tpch_1_rugo"
+sync_corpus tpch_10_rugo   "${DATA}/scratch/tpch_10_rugo"
+sync_corpus tpch_100_rugo  "${DATA}/scratch/tpch_100_rugo"
+sync_corpus job_rugo       "${DATA}/scratch/job_rugo"
+sync_corpus h2o_rugo       "${DATA}/scratch/h2o_rugo"
 sync_corpus hits_partitioned "${DATA}/scratch/hits_partitioned"
 sync_corpus hits_rugo      "${DATA}/scratch/hits_rugo"
 sync_corpus hits_skene     "${DATA}/scratch/hits_skene"

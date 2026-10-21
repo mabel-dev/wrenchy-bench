@@ -49,6 +49,12 @@ GCS_PREFIX = f"gs://{GCS_BUCKET}/benchmarks"
 # ⛔ A trend break at this prefix is the DATA: new format AND 4x smaller row
 # groups (64k vs 262k rows) on every skene line, and `bytes_processed` for skene
 # changes meaning with it (see bench_runner.telemetry_columns).
+#
+# The prefix keeps its "skene3" name although it now also holds the rugo-parquet
+# corpora for TPC-H, JOB and H2O (added 2026-10-21, replacing their skene
+# mirrors): renaming it would mean copying ~100GB between prefixes for no change
+# in the data. Those five lines are renamed instead (tpch_sf1_skene -> tpch_sf1,
+# ...), so each starts a clean baseline rather than being compared against skene.
 CORPUS_VERSION = "v2026-09-skene3"
 
 # Stock CPython, NOT the free-threaded build. Execution is native and already
@@ -66,10 +72,10 @@ PYTHON_VERSION = "3.14"
 class Corpus:
     """A stored dataset, built once and synced read-only onto the box.
 
-    ``codec`` is carried here and never inferred at run time. Skene mirrors are
-    lz4 (WriteOptions::for_fast_reads, the local-benchmark posture); the
-    remaining parquet corpus is zstd (the storage posture). A skene number and
-    a parquet number therefore differ by codec as well as by format, so the
+    ``codec`` is carried here and never inferred at run time. The one Skene
+    mirror (ClickBench) is lz4 (WriteOptions::for_fast_reads, the
+    local-benchmark posture); every parquet corpus is zstd (the storage
+    posture). A skene number and a parquet number therefore differ by codec as well as by format, so the
     codec travels with every result row.
     """
 
@@ -88,14 +94,21 @@ class Corpus:
 CORPORA = {
     c.name: c
     for c in (
-        Corpus("tpch_1_skene", "testdata/tpch_1_skene", "lz4", 405_000_000, tables=8),
-        Corpus("tpch_10_skene", "testdata/tpch_10_skene", "lz4", 4_000_000_000, tables=8),
-        Corpus("tpch_100_skene", "testdata/tpch_100_skene", "lz4", 41_500_000_000, tables=8),
-        Corpus("job_skene", "testdata/job_skene", "lz4", 2_000_000_000, tables=21),
+        # TPC-H, JOB and H2O are rugo-written parquet (zstd, 65,536-row row
+        # groups, column-major blocks of 4), rewritten from the upstream files
+        # by corpus/convert.py. None of the three stipulates a storage format,
+        # so the format is the harness's choice and is not part of a line's
+        # name. They sit under scratch/ because testdata/<name>_rugo already
+        # means something else in an opteryx-core checkout. Sizes are from
+        # local builds of the same layout.
+        Corpus("tpch_1_rugo", "scratch/tpch_1_rugo", "zstd", 294_000_000, tables=8),
+        Corpus("tpch_10_rugo", "scratch/tpch_10_rugo", "zstd", 3_100_000_000, tables=8),
+        Corpus("tpch_100_rugo", "scratch/tpch_100_rugo", "zstd", 32_400_000_000, tables=8),
+        Corpus("job_rugo", "scratch/job_rugo", "zstd", 1_500_000_000, tables=21),
         # medium (1e8 rows) only. `small` is 630MB, which sits entirely in page
         # cache on a 32GiB box and measures compute with storage removed — it
         # was the local default and is not carried into the suite.
-        Corpus("h2o_skene", "testdata/h2o_skene", "lz4", 8_900_000_000, tables=5),
+        Corpus("h2o_rugo", "scratch/h2o_rugo", "zstd", 7_900_000_000, tables=5),
         # ClickBench is a single wide table, so its files sit at the top level
         # rather than under per-table directories.
         #
@@ -151,46 +164,46 @@ class Line:
 
 SUITE: list[Line] = [
     Line(
-        id="tpch_sf1_skene",
-        label="TPC-H SF1 · Skene",
+        id="tpch_sf1",
+        label="TPC-H SF1",
         benchmark="tpch",
         scale_factor="1",
-        data_format="skene",
-        corpus="tpch_1_skene",
-        relation="testdata.tpch_1_skene",
+        data_format="parquet",
+        corpus="tpch_1_rugo",
+        relation="scratch.tpch_1_rugo",
         iterations=5,
         timeout_s=300,
     ),
     Line(
-        id="tpch_sf10_skene",
-        label="TPC-H SF10 · Skene",
+        id="tpch_sf10",
+        label="TPC-H SF10",
         benchmark="tpch",
         scale_factor="10",
-        data_format="skene",
-        corpus="tpch_10_skene",
-        relation="testdata.tpch_10_skene",
+        data_format="parquet",
+        corpus="tpch_10_rugo",
+        relation="scratch.tpch_10_rugo",
         iterations=5,
         timeout_s=300,
     ),
     Line(
-        id="tpch_sf100_skene",
-        label="TPC-H SF100 · Skene",
+        id="tpch_sf100",
+        label="TPC-H SF100",
         benchmark="tpch",
         scale_factor="100",
-        data_format="skene",
-        corpus="tpch_100_skene",
-        relation="testdata.tpch_100_skene",
+        data_format="parquet",
+        corpus="tpch_100_rugo",
+        relation="scratch.tpch_100_rugo",
         iterations=5,
         timeout_s=900,
     ),
     Line(
-        id="job_skene",
-        label="JOB · Skene",
+        id="job",
+        label="JOB",
         benchmark="job",
         scale_factor=None,
-        data_format="skene",
-        corpus="job_skene",
-        relation="testdata.job_skene",
+        data_format="parquet",
+        corpus="job_rugo",
+        relation="scratch.job_rugo",
         # JOB runs the whole 113-query suite in ~30s locally, so five
         # iterations is still minutes, not hours. The timeout exists to bound
         # a pathological plan, not to fit the schedule: a JOB query crossing
@@ -199,13 +212,13 @@ SUITE: list[Line] = [
         timeout_s=120,
     ),
     Line(
-        id="h2o_skene",
-        label="H2O · Skene (medium)",
+        id="h2o",
+        label="H2O (medium)",
         benchmark="h2o",
         scale_factor="medium",
-        data_format="skene",
-        corpus="h2o_skene",
-        relation="testdata.h2o_skene",
+        data_format="parquet",
+        corpus="h2o_rugo",
+        relation="scratch.h2o_rugo",
         iterations=5,
         timeout_s=300,
     ),
@@ -249,7 +262,7 @@ SUITE_BY_ID = {line.id: line for line in SUITE}
 # The calibration bookend. Run first and last; a divergence beyond the
 # tolerance means the machine moved under the run, so every number in it is
 # suspect. About a minute at each end, on a line already in the suite.
-CALIBRATION_LINE = "tpch_sf1_skene"
+CALIBRATION_LINE = "tpch_sf1"
 CALIBRATION_TOLERANCE = 0.10
 
 # Regression thresholds, applied to the minimum across iterations.

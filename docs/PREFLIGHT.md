@@ -17,26 +17,27 @@ are left alone.
 
 ## Still needed
 
-### 1. Skene mirrors for JOB and H2O
+### 1. Rugo-parquet corpora for TPC-H, JOB and H2O
 
 Built once, out of band, by `corpus/convert.py` — which calls opteryx-core's
-own `dev/parquet_to_skene.py`. No engine change, but it must happen before the
+own `dev/rewrite_parquet_layout.py` (and `dev/parquet_to_skene.py` for the
+ClickBench Skene mirror). No engine change, but it must happen before the
 first run:
 
 ```bash
 python corpus/convert.py --checkout ../opteryx-core --all
 ```
 
-`lz4` is not optional; it is the performance posture every other Skene mirror
-uses, and dropping it writes an uncompressed mirror into the same path that
+For the ClickBench Skene mirror, `lz4` is not optional; it is the performance
+posture, and dropping it writes an uncompressed mirror into the same path that
 nothing downstream would report.
 
-### 2. `make job` / `make h2o` should run on Skene too
+### 2. `make job` / `make h2o` should run on the same rugo parquet
 
 So that a number quoted from a developer laptop and a number from the daily
 run are the same measurement. This needs `--variant` support in
 `tests/performance/{job,h2o}/run.py` — the dataset prefix is currently the
-constant `testdata.job.` / `testdata.h2o.<size>.` — plus the mirror-generation
+constant `testdata.job.` / `testdata.h2o.<size>.` — plus the rugo-rewrite
 stanza in the Makefile targets, mirroring what `tpch` and `clickbench-skene`
 already do. H2O's default size moves to `medium` and `small` is dropped.
 

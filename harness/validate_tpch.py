@@ -5,7 +5,7 @@ corpus and compares each result to the published answer. Correctness, not
 speed: nothing here is timed or written to a bundle.
 
     cd <dir containing testdata/>
-    python harness/validate_tpch.py [--relation testdata.tpch_1_skene] [--only 6,13]
+    python harness/validate_tpch.py [--relation scratch.tpch_1_rugo] [--only 6,13]
 
 The answers come from DuckDB's `tpch_answers()` (the TPC answer set for SF1), so
 `pip install duckdb` is needed and its tpch extension must be installable once.
@@ -123,7 +123,7 @@ def run_query(opteryx, sql: str) -> tuple[list[str], list[list]]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate the TPC-H queries at SF1")
-    parser.add_argument("--relation", default=SUITE_BY_ID["tpch_sf1_skene"].relation,
+    parser.add_argument("--relation", default=SUITE_BY_ID["tpch_sf1"].relation,
                         help="dataset holding the SF1 tables (default: the suite's SF1 line)")
     parser.add_argument("--only", default=None, help="comma-separated query numbers, e.g. 6,13")
     parser.add_argument("--data-root", default=None, help="directory containing testdata/ (chdir here)")
@@ -133,7 +133,7 @@ def main() -> int:
         os.chdir(args.data_root)
     only = {int(n) for n in args.only.split(",")} if args.only else None
 
-    line = dataclasses.replace(SUITE_BY_ID["tpch_sf1_skene"], relation=args.relation)
+    line = dataclasses.replace(SUITE_BY_ID["tpch_sf1"], relation=args.relation)
     opteryx = bench_runner.bind_engine()
     answers = expected_answers()
 

@@ -8,11 +8,11 @@ and on a [GitHub Pages site](https://mabel-dev.github.io/wrenchy-bench/).
 
 | Line | Format | Corpus | Queries | Iterations | Size |
 |---|---|---|--:|--:|--:|
-| TPC-H SF1 | Skene · lz4 | `tpch_1_skene` | 22 | 5 | 0.3 GB |
-| TPC-H SF10 | Skene · lz4 | `tpch_10_skene` | 22 | 5 | 4.0 GB |
-| TPC-H SF100 | Skene · lz4 | `tpch_100_skene` | 22 | 3 | 41.5 GB |
-| JOB | Skene · lz4 | `job_skene` | 113 | 3 | 2.0 GB |
-| H2O (medium) | Skene · lz4 | `h2o_skene` | 15 | 3 | 8.9 GB |
+| TPC-H SF1 | Parquet (rugo) · zstd | `tpch_1_rugo` | 22 | 5 | 0.3 GB |
+| TPC-H SF10 | Parquet (rugo) · zstd | `tpch_10_rugo` | 22 | 5 | 3.1 GB |
+| TPC-H SF100 | Parquet (rugo) · zstd | `tpch_100_rugo` | 22 | 3 | 32.4 GB |
+| JOB | Parquet (rugo) · zstd | `job_rugo` | 113 | 3 | 1.5 GB |
+| H2O (medium) | Parquet (rugo) · zstd | `h2o_rugo` | 15 | 3 | 7.9 GB |
 | ClickBench partitioned | Parquet · zstd | `hits_partitioned` | 43 | 5 | 14.8 GB |
 | ClickBench rewritten | Parquet (rugo) · zstd | `hits_rugo` | 43 | 5 | 8.8 GB |
 | ClickBench | Skene · lz4 | `hits_skene` | 43 | 5 | 12.4 GB |
@@ -30,11 +30,14 @@ and on a [GitHub Pages site](https://mabel-dev.github.io/wrenchy-bench/).
 > This line exists to sit beside DuckDB and ClickHouse on identical bytes;
 > the Skene line is where our format is tested.
 
-> **JOB and H2O do not stipulate a storage format.** Neither upstream benchmark
-> ships one — both distribute *rows* (CSV from CWI, and `datagen.R`), not files.
-> The format was always this harness's choice, so it is made once and made the
-> same everywhere: Skene, like every other line. ClickBench-parquet stays
-> parquet because it *is* the parquet line.
+> **TPC-H, JOB and H2O do not stipulate a storage format.** None of the three
+> upstream benchmarks ships one — they distribute *rows* (`dbgen`, CSV from CWI,
+> and `datagen.R`), not files. The format is this harness's choice, so it is made
+> once and made the same everywhere: rugo parquet, and it is not part of a
+> line's name. They were Skene mirrors until 2026-10-21; the lines were renamed
+> (`tpch_sf1_skene` → `tpch_sf1`, …) so each starts a clean baseline rather than
+> being compared against a different format. ClickBench keeps its three
+> formats, because there the format is the point.
 
 The box installs the **published wheel** rather than building from source, so
 a number is attributable to an exact opteryx-core release rather than to
@@ -46,8 +49,8 @@ Each benchmark's job is to make this run comparable to the previous run.
 
 Results are compared against the trailing baseline (four non-suspect runs).
 
-- **Codec postures differ by design.** Skene mirrors are `lz4` (the local
-  benchmark posture); parquet corpora are `zstd`/`snappy` (the storage
+- **Codec postures differ by design.** The ClickBench Skene mirror is `lz4` (the
+  local benchmark posture); parquet corpora are `zstd`/`snappy` (the storage
   posture). ClickBench Parquet and ClickBench Skene therefore differ by codec
   as well as by format and are **not** a like-for-like format comparison. The
   codec travels on every result row for exactly this reason.

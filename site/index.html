@@ -161,13 +161,16 @@ const fmt = {
 // changes.
 const statusLabel = status => status === "ok" ? "okay" : status;
 
-// "tpch_sf100_skene" -> "TPC-H SF100 (skene)". The last segment is the
-// storage format; the rest names the benchmark. Suite names that are acronyms
-// get their proper casing, anything unknown is simply capitalised.
+// "tpch_sf100" -> "TPC-H SF100", "clickbench_rugo" -> "Clickbench (rugo)". A
+// trailing storage format is shown only where it distinguishes lines (ClickBench,
+// and the retired "_skene" ids in older runs); the rest names the benchmark.
+// Suite names that are acronyms get their proper casing, anything unknown is
+// simply capitalised.
 const SUITE_NAMES = { clickbench: "Clickbench", h2o: "H2O", job: "JOB", tpch: "TPC-H" };
+const FORMATS = new Set(["skene", "parquet", "rugo"]);
 const lineName = id => {
   const parts = id.split("_");
-  const format = parts.length > 1 ? parts.pop() : null;
+  const format = parts.length > 1 && FORMATS.has(parts[parts.length - 1]) ? parts.pop() : null;
   const name = parts.map(p => SUITE_NAMES[p] ?? (/^sf\d+$/.test(p) ? p.toUpperCase()
     : p.charAt(0).toUpperCase() + p.slice(1))).join(" ");
   return format ? `${name} (${format})` : name;
@@ -225,13 +228,16 @@ function spark(values, meta, w = 108, h = 26) {
   </svg>`;
 }
 
-// The suite total is the ORIGINAL seven lines, fixed. A line added later
+// The suite total is the ORIGINAL seven lines, fixed. TPC-H, JOB and H2O were
+// renamed when they moved from Skene to rugo parquet (2026-10-21); a run holds
+// only one id of each pair, so listing both keeps the total continuous. A line added later
 // (ClickBench rewritten, TPC-DS, SSB, JSONBench, …) gets its own row in the
 // per-benchmark table but never enters the total — adding it would move every
 // later total by the new line's time and break the history at that run.
 const SUITE_TOTAL_LINES = [
   "tpch_sf1_skene", "tpch_sf10_skene", "tpch_sf100_skene", "job_skene",
-  "h2o_skene", "clickbench_parquet", "clickbench_skene",
+  "h2o_skene", "tpch_sf1", "tpch_sf10", "tpch_sf100", "job", "h2o",
+  "clickbench_parquet", "clickbench_skene",
 ];
 const suiteTotal = run =>
   SUITE_TOTAL_LINES.reduce((sum, line) => sum + (run.totals[line]?.sum_min_ms || 0), 0);
@@ -365,6 +371,7 @@ const XMR_K = 2.66;
 // carries no corpus hash). Marked at the first run at or after `from`.
 const EVENTS = [
   { from: "2026-10-08T17:00Z", text: "corpora v2026-08-skene2 → v2026-09-skene3" },
+  { from: "2026-10-21T00:00Z", text: "TPC-H, JOB, H2O: skene → rugo parquet" },
 ];
 
 function events(history) {

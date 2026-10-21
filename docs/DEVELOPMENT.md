@@ -38,7 +38,7 @@ harness/
   report.py       regression detection and the site data
   publish.py      Parquet via rugo, committed through the upload service
 corpus/
-  convert.py      build the Skene mirrors from parquet, once
+  convert.py      build the corpora (rugo parquet, and the ClickBench Skene mirror) from upstream parquet, once
   publish.py      manifest, push to GCS, mirror to S3
 infra/            terraform, the launcher Lambda, and the collector's helpers
 bootstrap/        what the instance runs
@@ -68,15 +68,15 @@ no S3 one** (`opteryx/connectors/io_systems/`), so without it the corpora cannot
 be referenced from the engine at all. ~$1.75/month in storage, no egress.
 
 ```bash
-python corpus/convert.py --checkout ../opteryx-core --all      # build the mirrors
-python corpus/publish.py --source ../opteryx-core/testdata/job_skene --name job_skene
+python corpus/convert.py --checkout ../opteryx-core --all      # build the corpora
+python corpus/publish.py --source ../opteryx-core/scratch/job_rugo --name job_rugo
 ```
 
 ## Local use
 
 ```bash
 python harness/run_suite.py --data-root <dir with testdata/ and scratch/> \
-    --out /tmp/bundle --only tpch_sf1_skene --skip-calibration
+    --out /tmp/bundle --only tpch_sf1 --skip-calibration
 python harness/report.py --bundle /tmp/bundle --site-data site/data
 python harness/publish.py --bundle /tmp/bundle --dry-run
 ```
@@ -90,7 +90,7 @@ answer set (needs `pip install duckdb`):
 
 ```bash
 cd <dir containing testdata/>
-python harness/validate_tpch.py --relation testdata.tpch_1_skene
+python harness/validate_tpch.py --relation scratch.tpch_1_rugo
 ```
 
 Known results and why (2026-09-28, local opteryx-core 0.9.143+3596: 21 PASS, 1 DATA):

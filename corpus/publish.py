@@ -4,7 +4,7 @@ Daily runs never generate data. Every corpus is built out-of-band, stamped
 with a manifest, and published; the run syncs it and verifies the hash before a
 single query executes.
 
-    python corpus/publish.py --source ../opteryx-core/testdata/job_skene --name job_skene
+    python corpus/publish.py --source ../opteryx-core/scratch/job_rugo --name job_rugo
 
 Publishes to `s3://opteryx-bench-corpora/<version>/<corpus>/`, which is what
 the benchmark box reads — in-region, so the transfer is free. GCS to EC2 would
