@@ -124,6 +124,7 @@
   .empty { font-family:var(--mono); font-size:13px; color:var(--muted); padding:36px 0; }
   footer { margin-top:56px; padding-top:18px; border-top:1px solid var(--rule);
            font-family:var(--sans); font-size:12px; color:var(--muted); }
+  footer p.notice { margin:0 0 12px; line-height:1.5; }
   a { color:var(--accent); text-decoration:none; }
   a:hover { text-decoration:underline; }
   @media (max-width:600px) {
@@ -144,6 +145,24 @@
 <div id="tip" role="tooltip"></div>
 
 <footer>
+  <p class="notice">
+    These benchmarks track Opteryx's performance over time, to identify
+    regressions, confirm improvements, and demonstrate that the engine is not
+    over-fitted to any one benchmark. No comparison with other systems is
+    provided.
+  </p>
+  <p class="notice">
+    Benchmarks:
+    <a href="https://github.com/ClickHouse/ClickBench">ClickBench</a>
+    (ClickHouse, Inc., <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>);
+    <a href="https://www.tpc.org/">TPC-H</a> (derived from TPC-H; not audited and
+    not comparable to published TPC-H results);
+    Join Order Benchmark (Leis et al., VLDB 2015; data: Information courtesy of
+    <a href="https://www.imdb.com">IMDb</a>. Used with permission.);
+    <a href="https://github.com/h2oai/db-benchmark">H2O db-benchmark</a>
+    (<a href="https://www.mozilla.org/MPL/2.0/">MPL-2.0</a>). Details in the
+    <a href="https://github.com/mabel-dev/wrenchy-bench#licensing-and-attribution">README</a>.
+  </p>
   <a href="https://github.com/mabel-dev/wrenchy-bench">The Source, With Love</a> ·
   <a href="https://github.com/mabel-dev/opteryx-core">Opteryx is on Github</a>
 </footer>
