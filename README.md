@@ -6,6 +6,19 @@ Eight workloads, one `c8g.4xlarge`, daily. Corpora are built once
 and stored, never regenerated. Results land in `opteryx.benchmarks.telemetry`
 and on a [GitHub Pages site](https://mabel-dev.github.io/wrenchy-bench/).
 
+## Purpose
+
+We run and publish these benchmarks to track the engine's performance over time
+across a number of different benchmarks, in order to:
+
+1. **identify regressions** as they are introduced;
+2. **confirm improvements** to the engine; and
+3. **demonstrate that we are not over-fitting** to any single benchmark.
+
+This is an engineering tracker for Opteryx's own development. We provide no
+mechanism as part of this tracking to compare or contrast Opteryx with other
+systems.
+
 | Line | Format | Corpus | Queries | Iterations | Size |
 |---|---|---|--:|--:|--:|
 | TPC-H SF1 | Parquet (rugo) · zstd | `tpch_1_rugo` | 22 | 5 | 0.3 GB |
@@ -67,6 +80,36 @@ Results are compared against the trailing baseline (four non-suspect runs).
   four non-suspect runs, confirmed on two consecutive runs — or 25% on a single
   run. A status transition `ok → error`/`timeout` is reported immediately and
   needs no statistics.
+
+## Licensing and attribution
+
+This repository's own code (the harness, infrastructure, site and scripts) is
+licensed under the Apache License 2.0, see [LICENSE](LICENSE). **That licence
+does not cover the third-party benchmark material**: the queries under
+`queries/` and the corpora derived from the benchmarks' data keep the terms of
+their upstream sources, as set out below and in a `NOTICE.md` beside each set
+of queries. All of it is used only for the purpose set out under
+[Purpose](#purpose), and the corpora are held in private storage, not
+published for download.
+
+| Benchmark | Source | Terms | Notice |
+|---|---|---|---|
+| ClickBench | [ClickHouse, Inc.](https://github.com/ClickHouse/ClickBench) | [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) | [queries/clickbench/NOTICE.md](queries/clickbench/NOTICE.md) |
+| TPC-H | [Transaction Processing Performance Council](https://www.tpc.org/) | TPC fair use policy | [queries/tpch/NOTICE.md](queries/tpch/NOTICE.md) |
+| JOB | Leis et al., VLDB 2015; data from [IMDb](https://www.imdb.com) | IMDb non-commercial terms | [queries/job/NOTICE.md](queries/job/NOTICE.md) |
+| H2O | [H2O.ai db-benchmark](https://github.com/h2oai/db-benchmark) | [MPL-2.0](https://www.mozilla.org/MPL/2.0/) | [queries/h2o/NOTICE.md](queries/h2o/NOTICE.md) |
+
+- **ClickBench.** The queries have `hits` replaced by a `{DATASET}`
+  placeholder and some expressions adapted to Opteryx's SQL dialect; the
+  corpora (`hits_rugo`, `hits_skene`) are the upstream `hits` data rewritten
+  into other storage formats. These materials stay under CC BY-NC-SA 4.0.
+- **TPC-H.** These are not TPC-H results. They are derived from TPC-H, are not
+  audited or reviewed by the TPC, and are not comparable to published TPC-H
+  results. "TPC-H" identifies the workload the queries derive from; it does
+  not claim a TPC result.
+- **JOB.** The data is derived from IMDb. Information courtesy of IMDb
+  (https://www.imdb.com). Used with permission.
+- **H2O.** The `.sql` files derived from db-benchmark remain under MPL-2.0.
 
 ## Development
 
