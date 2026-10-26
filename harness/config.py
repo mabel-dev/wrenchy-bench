@@ -113,14 +113,13 @@ CORPORA = {
         # rather than under per-table directories.
         #
         # THE CANONICAL UPSTREAM FILES, downloaded from
-        # datasets.clickhouse.com/hits_compatible/athena_partitioned/ — the same
-        # 100 objects every published ClickBench "Parquet (partitioned)" number
-        # is measured against. It replaced `hits_rugo_262k`, which was the same
-        # rows rewritten through rugo's own writer at 262,144 rows per row
-        # group. That rewrite made the corpus internally consistent with our
-        # writer policy and made the number incomparable with everyone else's,
-        # which is the opposite of what this line is for: it exists to sit
-        # beside DuckDB, ClickHouse and DataFusion on the same data.
+        # datasets.clickhouse.com/hits_compatible/athena_partitioned/ — the
+        # 100 objects ClickBench publishes, used unmodified. It replaced
+        # `hits_rugo_262k`, which was the same rows rewritten through rugo's
+        # own writer at 262,144 rows per row group. That rewrite made the
+        # corpus internally consistent with our writer policy but no longer the
+        # published files, which is the opposite of what this line is for: it
+        # exists as the unmodified reference for the rewritten and Skene lines.
         Corpus("hits_partitioned", "scratch/hits_partitioned", "zstd", 14_800_000_000, tables=0),
         Corpus("hits_skene", "scratch/hits_skene", "lz4", 12_400_000_000, tables=0),
         # The canonical files rewritten through rugo's own writer at its
@@ -128,7 +127,7 @@ CORPORA = {
         # output file per source file — the same data as the ClickBench entry
         # "Opteryx (Parquet, rewritten)", whose load step does this rewrite.
         # A line BESIDE hits_partitioned, not a replacement for it: the
-        # canonical line is the one comparable with everyone else's numbers.
+        # canonical line is the unmodified reference.
         Corpus("hits_rugo", "scratch/hits_rugo", "zstd", 8_800_000_000, tables=0),
     )
 }

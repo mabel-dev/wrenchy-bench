@@ -38,10 +38,10 @@ systems.
 > beside the canonical line, not in place of it.
 
 > **ClickBench parquet is the canonical upstream corpus** — the 100 objects
-> from `datasets.clickhouse.com/hits_compatible/athena_partitioned/` that every
-> published ClickBench "Parquet (partitioned)" figure is measured against.
-> This line exists to sit beside DuckDB and ClickHouse on identical bytes;
-> the Skene line is where our format is tested.
+> from `datasets.clickhouse.com/hits_compatible/athena_partitioned/`, used
+> unmodified. This line exists as the unmodified reference for the rewritten
+> and Skene lines; the Skene line is where our format is tested. No comparison
+> with other systems is made.
 
 > **TPC-H, JOB and H2O do not stipulate a storage format.** None of the three
 > upstream benchmarks ships one — they distribute *rows* (`dbgen`, CSV from CWI,
