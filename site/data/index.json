@@ -1,5 +1,102 @@
 [
  {
+  "run_id": "2026-10-31T15:02Z",
+  "run_date": "2026-10-31T15:05:34.754614+00:00",
+  "status": "ok",
+  "engine_version": "0.9.178",
+  "engine_build": 3794,
+  "host": {
+   "availability_zone": "us-east-1a",
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4 (Neoverse-V2)",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": 33012973568,
+   "memory_gib": 32
+  },
+  "totals": {
+   "clickbench_parquet": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 43,
+    "peak_rss_bytes": 19291308032,
+    "queries": 43,
+    "sum_min_ms": 8939.063201,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "clickbench_rugo": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 43,
+    "peak_rss_bytes": 15045455872,
+    "queries": 43,
+    "sum_min_ms": 6551.867644,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "clickbench_skene": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 43,
+    "peak_rss_bytes": 13311557632,
+    "queries": 43,
+    "sum_min_ms": 8878.771983,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "h2o": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 15,
+    "peak_rss_bytes": 25736040448,
+    "queries": 15,
+    "sum_min_ms": 16335.691235,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "job": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 113,
+    "peak_rss_bytes": 5547495424,
+    "queries": 113,
+    "sum_min_ms": 6810.071983,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "tpch_sf1": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 22,
+    "peak_rss_bytes": 1414766592,
+    "queries": 22,
+    "sum_min_ms": 568.4780049999999,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "tpch_sf10": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 22,
+    "peak_rss_bytes": 4839256064,
+    "queries": 22,
+    "sum_min_ms": 3228.777161,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "tpch_sf100": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 22,
+    "peak_rss_bytes": 31957553152,
+    "queries": 22,
+    "sum_min_ms": 36763.163416,
+    "timeout": 0,
+    "unstable": 0
+   }
+  }
+ },
+ {
   "run_id": "2026-10-30T15:32Z",
   "run_date": "2026-10-30T15:35:57.188873+00:00",
   "status": "ok",
