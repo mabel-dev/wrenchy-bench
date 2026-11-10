@@ -1,5 +1,102 @@
 [
  {
+  "run_id": "2026-11-10T16:47Z",
+  "run_date": "2026-11-10T16:50:51.667024+00:00",
+  "status": "ok",
+  "engine_version": "0.9.197",
+  "engine_build": 3861,
+  "host": {
+   "availability_zone": "us-east-1a",
+   "cpu_count": 16,
+   "cpu_model": "AWS Graviton4 (Neoverse-V2)",
+   "instance_type": "c8g.4xlarge",
+   "mem_total_bytes": 33012969472,
+   "memory_gib": 32
+  },
+  "totals": {
+   "clickbench_parquet": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 43,
+    "peak_rss_bytes": 19391385600,
+    "queries": 43,
+    "sum_min_ms": 8280.695359,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "clickbench_rugo": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 43,
+    "peak_rss_bytes": 15197577216,
+    "queries": 43,
+    "sum_min_ms": 6032.819372,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "clickbench_skene": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 43,
+    "peak_rss_bytes": 13448220672,
+    "queries": 43,
+    "sum_min_ms": 8568.267218,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "h2o": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 15,
+    "peak_rss_bytes": 25651617792,
+    "queries": 15,
+    "sum_min_ms": 12639.132341999999,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "job": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 113,
+    "peak_rss_bytes": 5509566464,
+    "queries": 113,
+    "sum_min_ms": 5909.216256,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "tpch_sf1": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 22,
+    "peak_rss_bytes": 1413517312,
+    "queries": 22,
+    "sum_min_ms": 483.38716900000003,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "tpch_sf10": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 22,
+    "peak_rss_bytes": 4706275328,
+    "queries": 22,
+    "sum_min_ms": 2678.212344,
+    "timeout": 0,
+    "unstable": 0
+   },
+   "tpch_sf100": {
+    "crashed": 0,
+    "error": 0,
+    "ok": 22,
+    "peak_rss_bytes": 31025602560,
+    "queries": 22,
+    "sum_min_ms": 30650.098171,
+    "timeout": 0,
+    "unstable": 0
+   }
+  }
+ },
+ {
   "run_id": "2026-11-09T19:29Z",
   "run_date": "2026-11-09T19:33:36.273468+00:00",
   "status": "ok",
