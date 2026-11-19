@@ -135,6 +135,20 @@ def detect(current: dict, history: list[dict]) -> list[dict]:
                 )
                 continue
 
+            # An error or crash with no clean history to transition FROM — a
+            # new query, or one failing since before the baseline window — is
+            # still a failure. Without this it was silent on every run.
+            if entry["status"] in ("error", "crashed"):
+                findings.append(
+                    {
+                        "kind": "failure",
+                        "line": line,
+                        "query": query,
+                        "detail": f"status {entry['status']} (no clean baseline)",
+                    }
+                )
+                continue
+
             if entry["status"] != "ok" or entry["min_ms"] is None:
                 continue
 
@@ -315,6 +329,25 @@ def main() -> int:
     current = {"lines": minimums(records), "corpus_hashes": run.get("corpus_hashes")}
     history = load_history(args.site_data)
     findings = detect(current, history)
+    if run.get("status") in ("failed", "degraded"):
+        # The run itself says it is not clean; that must reach the issue
+        # step even if no single query crossed a threshold.
+        broken = {
+            key: sum(line.get(key, 0) for line in run.get("lines", []))
+            for key in ("error_count", "crashed_count", "missing_count")
+        }
+        findings.insert(
+            0,
+            {
+                "kind": "failure",
+                "line": "run",
+                "query": "status",
+                "detail": (
+                    f"run status {run['status']}: {broken['error_count']} errors, "
+                    f"{broken['crashed_count']} crashed, {broken['missing_count']} missing"
+                ),
+            },
+        )
     summary = summarise(run, current)
 
     os.makedirs(os.path.join(args.site_data, "runs"), exist_ok=True)

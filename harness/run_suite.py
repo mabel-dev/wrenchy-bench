@@ -11,7 +11,7 @@ Everything it produces lands under --out:
     results.jsonl     one record per query per iteration -> opteryx.benchmarks.telemetry
     raw/              each line's own JSONL, as the driver wrote it
     console/          per-line stderr
-    STATUS            ok | suspect | failed, written last
+    STATUS            ok | suspect | degraded | failed, written last
 """
 
 from __future__ import annotations
@@ -26,6 +26,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from harness import manifest, probe  # noqa: E402
+from harness.bench_runner import load_queries  # noqa: E402
 from harness.config import (  # noqa: E402
     CALIBRATION_LINE,
     CALIBRATION_TOLERANCE,
@@ -223,6 +224,14 @@ def run_line(line, data_root: str, out_dir: str, env: dict, run: dict, python: s
         result["error"] = f"driver exited {code}; see console/{line.id}.log"
         print(f"    ✗ exit {code} — continuing with the remaining lines", flush=True)
 
+    # Every query x iteration must leave a record. A line that exits 0 but
+    # wrote fewer rows than that lost queries somewhere between the
+    # coordinator and the sink, and a short line must never read as a clean
+    # one — its missing rows are exactly the ones that would have moved the
+    # totals.
+    expected = len(load_queries(line)) * line.iterations
+    result["expected_count"] = expected
+    result["missing_count"] = max(0, expected - len(records))
     result["record_count"] = len(records)
     result["timeout_count"] = sum(1 for r in records if r["status"] == "timeout")
     result["error_count"] = sum(1 for r in records if r["status"] == "error")
@@ -236,7 +245,7 @@ def run_line(line, data_root: str, out_dir: str, env: dict, run: dict, python: s
     print(
         f"    {len(records)} records  {wall_ms / 1000:.1f}s  peak {peak / 1e9:.1f}GB  "
         f"{result['timeout_count']} timeouts  {result['error_count']} errors  "
-        f"{result['crashed_count']} crashed",
+        f"{result['crashed_count']} crashed  {result['missing_count']} missing",
         flush=True,
     )
     return records, result
@@ -314,9 +323,31 @@ def main() -> int:
                 abs(calibration["close_ms"] - calibration["open_ms"]) / calibration["open_ms"]
             )
 
+    # ⛔ A RUN WITH ERRORED QUERIES IS NOT OK. The status used to look only at
+    # driver exit codes, and the driver exits 0 whenever it reaches the end of
+    # its query list — including when queries inside it raised. On 2026-11-18
+    # thirteen clickbench iterations failed fast with a GROUP BY spill error,
+    # the line exited 0, STATUS said ok, and the fast failures dragged the
+    # run's average down so it read as a speed-up.
+    #
+    # `degraded`: every line ran to the end, but some queries errored, crashed
+    # or left no record. Kept and published like any run, excluded from trend
+    # baselines (report.py only baselines `ok`). Timeouts are not counted
+    # here: they are a budget the suite sets, and report.py already flags an
+    # ok -> timeout transition.
     failed = any(r["exit_code"] != 0 for r in line_results)
+    broken = {
+        key: sum(r.get(key, 0) for r in line_results)
+        for key in ("error_count", "crashed_count", "missing_count")
+    }
+    degraded = any(broken.values())
     drifted = (calibration["drift"] or 0) > CALIBRATION_TOLERANCE
-    status = "failed" if failed else ("suspect" if drifted else "ok")
+    status = (
+        "failed" if failed
+        else "degraded" if degraded
+        else "suspect" if drifted
+        else "ok"
+    )
 
     run_manifest = {
         **run,
@@ -345,13 +376,19 @@ def main() -> int:
         handle.write(status + "\n")
 
     print(f"\n{status.upper()}  {len(all_records)} records  → {out_dir}", flush=True)
+    if degraded:
+        print(
+            f"  {broken['error_count']} errors, {broken['crashed_count']} crashed, "
+            f"{broken['missing_count']} missing records",
+            flush=True,
+        )
     if drifted:
         print(
             f"  calibration drift {calibration['drift']:.1%} exceeds "
             f"{CALIBRATION_TOLERANCE:.0%} — the machine moved during this run",
             flush=True,
         )
-    return 1 if status == "failed" else 0
+    return 1 if status in ("failed", "degraded") else 0
 
 
 if __name__ == "__main__":
